@@ -7,9 +7,9 @@ from skimage import exposure
 
 
 
-def extract_images(path_to_file,out_folder,fov_div,tif=False):
+def extract_images(path_to_file,out_folder,fov_div):
 
-	if tif:
+	if os.path.splitext(os.path.basename(path_to_file))[1] in ['.tif','.TIF','.tiff','.TIFF']:
 		tifdata=imread(path_to_file)
 		file=[i for i in tifdata]
 	else:
