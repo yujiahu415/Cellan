@@ -7,10 +7,7 @@ from skimage import exposure
 
 
 
-def extract_images(path_to_file,out_folder):
-
-	tif=False
-	delta=5.0
+def extract_images(path_to_file,out_folder,fov_div,tif=False):
 
 	if tif:
 		tifdata=imread(path_to_file)
@@ -19,21 +16,18 @@ def extract_images(path_to_file,out_folder):
 		lifdata=LifFile(path_to_file)
 		file=[i for i in lifdata.get_iter_image()][0]
 
-	z_list=[i for i in files[0].get_iter_z(t=0,c=0)]
-	c_list=[i for i in files[0].get_iter_c(t=0,z=0)]
+	c_list=[i for i in file.get_iter_c(t=0,z=0)]
 
+	image=np.array(file.get_frame(z=0,t=0,c=0))
+	fov_width=int(image.shape[0]/fov_div)
+	fov_height=int(image.shape[1]/fov_div)
 
-	for c in range(len(c_list)):
+	for w in range(fov_div):
 
-		image=files[0].get_frame(z=0,t=0,c=c)
-		image=np.array(image)
+		for h in range(fov_div):
 
-		fov_width=int(image.shape[0]/10)
-		fov_height=int(image.shape[1]/10)
+			for c in range(len(c_list)):
 
-		for n in range(10):
-			fov=image[n*fov_width:(n+1)*fov_width,n*fov_height:(n+1)*fov_height]
-			fov=np.uint8(exposure.rescale_intensity(fov,out_range=(0,255)))
-
-			fov=np.uint8(fov)
-			cv2.imwrite(os.path.join(out_folder,str(c)+'_'+str(n)+'_new.png'),fov)
+				image=np.array(file.get_frame(z=0,t=0,c=c))
+				fov=np.uint8(exposure.rescale_intensity(image[w*fov_width:(w+1)*fov_width,h*fov_height:(h+1)*fov_height],out_range=(0,255)))
+				cv2.imwrite(os.path.join(out_folder,os.path.splitext(os.path.basename(path_to_file))[0],'_'+str(w)+str(h)+'_c'+str(c)+'.png'),fov)
