@@ -659,6 +659,15 @@ class WindowLv2_AnalyzeCells(wx.Frame):
 		boxsizer.Add(module_fov,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
 		boxsizer.Add(0,5,0)
 
+		module_expansion=wx.BoxSizer(wx.HORIZONTAL)
+		button_expansion=wx.Button(panel,label='Specify the expansion\nof a cell',size=(300,40))
+		button_expansion.Bind(wx.EVT_BUTTON,self.specify_expansion)
+		wx.Button.SetToolTip(button_expansion,'If the Detector detects the cell outlines, enter 1. If the Detector detects the nuclei, enter a number > 1 to detect areas outside the nuclei.')
+		self.text_expansion=wx.StaticText(panel,label='Default: 1',style=wx.ALIGN_LEFT|wx.ST_ELLIPSIZE_END)
+		module_expansion.Add(button_expansion,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
+		module_expansion.Add(self.text_expansion,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
+		boxsizer.Add(module_expansion,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
+		boxsizer.Add(0,5,0)
 
 		button_analyze=wx.Button(panel,label='Start to analyze cells',size=(300,40))
 		button_analyze.Bind(wx.EVT_BUTTON,self.analyze_calsignals)
@@ -753,6 +762,16 @@ class WindowLv2_AnalyzeCells(wx.Frame):
 		self.text_fov.SetLabel('The height and width of an image will be divided by : '+str(self.fov_div)+'.')
 		dialog.Destroy()
 
+
+	def specify_expansion(self,event):
+
+		dialog=wx.NumberEntryDialog(self,'Enter the expansion factor that enables\nthe Detector to detect expanded areas','Enter a number:','Expansion factor',1,1,100)
+		if dialog.ShowModal()==wx.ID_OK:
+			self.expansion=int(dialog.GetValue())
+		else:
+			self.expansion=1
+		self.text_expansion.SetLabel('The expansion factor is : '+str(self.expansion)+'.')
+		dialog.Destroy()
 
 
 	def analyze_cells(self,event):
