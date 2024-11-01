@@ -7,7 +7,7 @@ from skimage import exposure
 
 
 
-def generate_images(path_to_file,out_folder):
+def extract_images(path_to_file,out_folder):
 
 	tif=False
 	delta=5.0
