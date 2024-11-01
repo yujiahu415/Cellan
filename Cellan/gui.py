@@ -178,6 +178,7 @@ class WindowLv2_GenerateImages(wx.Frame):
 		super(WindowLv2_GenerateImages,self).__init__(parent=None,title=title,size=(1000,330))
 		self.path_to_files=None
 		self.result_path=None
+		self.fov_div=1
 
 		self.dispaly_window()
 
@@ -206,6 +207,16 @@ class WindowLv2_GenerateImages(wx.Frame):
 		module_outputfolder.Add(button_outputfolder,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
 		module_outputfolder.Add(self.text_outputfolder,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
 		boxsizer.Add(module_outputfolder,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
+		boxsizer.Add(0,5,0)
+
+		module_fov=wx.BoxSizer(wx.HORIZONTAL)
+		button_fov=wx.Button(panel,label='Specify the field of view\nin an image',size=(300,40))
+		button_fov.Bind(wx.EVT_BUTTON,self.specify_fov)
+		wx.Button.SetToolTip(button_fov,'Specify the number (n) of field of view for height/width, the image will be divided into smaller field of view with the dimension of (height/n) X (width/n).')
+		self.text_fov=wx.StaticText(panel,label='Default: 1',style=wx.ALIGN_LEFT|wx.ST_ELLIPSIZE_END)
+		module_fov.Add(button_fov,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
+		module_fov.Add(self.text_fov,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
+		boxsizer.Add(module_fov,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
 		boxsizer.Add(0,5,0)
 
 		generate=wx.BoxSizer(wx.HORIZONTAL)
@@ -243,6 +254,17 @@ class WindowLv2_GenerateImages(wx.Frame):
 		dialog.Destroy()
 
 
+	def specify_fov(self,event):
+
+		dialog=wx.NumberEntryDialog(self,'Enter the number of sections\nthe width and height should be divided','Enter a number:','Number of field of view',1,1,10000)
+		if dialog.ShowModal()==wx.ID_OK:
+			self.fov_div=int(dialog.GetValue())
+		else:
+			self.fov_div=1
+		self.text_fov.SetLabel('The height and width of an image will be divided by : '+str(self.fov_div)+'.')
+		dialog.Destroy()
+
+
 	def generate_images(self,event):
 
 		if self.path_to_files is None or self.result_path is None:
@@ -253,7 +275,7 @@ class WindowLv2_GenerateImages(wx.Frame):
 
 			print('Generating image examples...')
 			for i in self.path_to_files:
-				extract_images(i,self.result_path)
+				extract_images(i,self.result_path,self.fov_div)
 			print('Image example generation completed!')
 
 
@@ -627,6 +649,15 @@ class WindowLv2_AnalyzeCells(wx.Frame):
 		boxsizer.Add(module_detection,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
 		boxsizer.Add(0,5,0)
 
+		module_fov=wx.BoxSizer(wx.HORIZONTAL)
+		button_fov=wx.Button(panel,label='Specify the field of view\nin an image',size=(300,40))
+		button_fov.Bind(wx.EVT_BUTTON,self.specify_fov)
+		wx.Button.SetToolTip(button_fov,'Specify the number (n) of field of view for height/width, the image will be divided into smaller field of view with the dimension of (height/n) X (width/n).')
+		self.text_fov=wx.StaticText(panel,label='Default: 1',style=wx.ALIGN_LEFT|wx.ST_ELLIPSIZE_END)
+		module_fov.Add(button_fov,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
+		module_fov.Add(self.text_fov,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
+		boxsizer.Add(module_fov,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
+		boxsizer.Add(0,5,0)
 
 
 		button_analyze=wx.Button(panel,label='Start to analyze cells',size=(300,40))
@@ -711,6 +742,16 @@ class WindowLv2_AnalyzeCells(wx.Frame):
 			self.text_detection.SetLabel('Detector: '+detector+'; '+'The cell kinds / detection threshold: '+str(self.detection_threshold)+'.')
 		dialog.Destroy()
 
+
+	def specify_fov(self,event):
+
+		dialog=wx.NumberEntryDialog(self,'Enter the number of sections\nthe width and height should be divided','Enter a number:','Number of field of view',1,1,10000)
+		if dialog.ShowModal()==wx.ID_OK:
+			self.fov_div=int(dialog.GetValue())
+		else:
+			self.fov_div=1
+		self.text_fov.SetLabel('The height and width of an image will be divided by : '+str(self.fov_div)+'.')
+		dialog.Destroy()
 
 
 
