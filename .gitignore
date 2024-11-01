@@ -158,5 +158,5 @@ cython_debug/
 #.idea/
 
 # Ignore trained Detectors
-Cellan/detectors/
-!Cellan/detectors/__init__.py
+# Cellan/detectors/
+#!Cellan/detectors/__init__.py
