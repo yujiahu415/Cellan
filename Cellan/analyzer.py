@@ -151,23 +151,3 @@ class AnalyzeCells():
 		'''
 
 		print('Analysis completed!')
-
-
-
-
-
-
-
-
-
-
-path_to_file='C:\\Users\\HUY7\\Downloads\\CONTROL AMYLOID-488 TAU-647 091624 40XO EDoF.lif'
-results_path='C:\\Users\\HUY7\\Downloads\\test'
-path_to_detector='C:\\Users\\HUY7\\Downloads\\Cell_1280'
-cell_kinds=['cell']
-detection_threshold={'cell':0.9}
-expansion=10
-fov_div=10
-
-AC=AnalyzeCells(path_to_file,results_path,path_to_detector,cell_kinds,detection_threshold=detection_threshold,expansion=expansion,fov_div=fov_div)
-AC.channels_intensity({'cell':(255,0,255)},detection_channel=0,analysis_channel=[0,1,2])
