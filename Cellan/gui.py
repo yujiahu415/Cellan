@@ -722,9 +722,9 @@ class WindowLv2_AnalyzeCells(wx.Frame):
 
 		else:
 
-
-
-			print('Analysis completed!')
+			for i in self.path_to_files:
+				AC=AnalyzeCells(i,self.result_path,self.path_to_detector,self.cell_kinds,detection_threshold=self.detection_threshold,expansion=self.expansion,fov_div=self.fov_div)
+				AC.channels_intensity({'cell':(255,0,255)},analysis_channel=[0,1,2])
 
 
 
