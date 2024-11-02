@@ -135,19 +135,8 @@ class AnalyzeCells():
 										cv2.imwrite(os.path.join(self.results_path,os.path.splitext(os.path.basename(self.path_to_file))[0]+'_'+str(w)+str(h)+'_c'+str(c)+'_annotated.jpg'),to_annotate)
 
 
-
-
-
-		'''
-		df=pd.DataFrame(self.cell_correctFmeans[cell_name],index=[i for i in range(self.duration)])
-		df.to_excel(os.path.join(self.results_path,cell_name+'_F.xlsx'),float_format='%.2f',index_label='frame/ID')
-
-		for parameter_name in ['F0','Fmax','dF/F0','Stim_t']:
-			df=self.all_parameters[cell_name][parameter_name]
-			parameters.append(pd.DataFrame.from_dict(df,orient='index',columns=[parameter_name]).reset_index(drop=True))
-
-		out_sheet=os.path.join(self.results_path,cell_name+'_summary.xlsx')
-		pd.concat(parameters,axis=1).to_excel(out_sheet,float_format='%.2f',index_label='ID/parameter')
-		'''
-
 		print('Analysis completed!')
+
+
+
+
