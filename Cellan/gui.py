@@ -670,7 +670,7 @@ class WindowLv2_AnalyzeIntensity(wx.Frame):
 		boxsizer.Add(0,5,0)
 
 		button_analyze=wx.Button(panel,label='Start to analyze cells',size=(300,40))
-		button_analyze.Bind(wx.EVT_BUTTON,self.analyze_calsignals)
+		button_analyze.Bind(wx.EVT_BUTTON,self.analyze_intensity)
 		wx.Button.SetToolTip(button_analyze,'Will output ...')
 		boxsizer.Add(0,5,0)
 		boxsizer.Add(button_analyze,0,wx.RIGHT|wx.ALIGN_RIGHT,90)
@@ -774,7 +774,7 @@ class WindowLv2_AnalyzeIntensity(wx.Frame):
 		dialog.Destroy()
 
 
-	def analyze_cells(self,event):
+	def analyze_intensity(self,event):
 
 		if self.path_to_files is None or self.result_path is None or self.path_to_detector is None:
 
