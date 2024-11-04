@@ -609,6 +609,9 @@ class WindowLv2_AnalyzeIntensity(wx.Frame):
 		self.detection_threshold=None
 		self.expansion=None
 		self.fov_div=1
+		self.names_colors=None
+		self.detection_channel=0
+		self.analysis_channels=[]
 		
 		self.dispaly_window()
 
@@ -740,7 +743,12 @@ class WindowLv2_AnalyzeIntensity(wx.Frame):
 				dialog1.Destroy()
 			else:
 				self.cell_kinds=cell_names
+			self.names_colors={}
 			self.detection_threshold={}
+			if len(self.cell_kinds)>1:
+				diff=int(255/len(self.cell_kinds))
+			else:
+				diff=0
 			for cell_name in cell_kinds:
 				dialog1=wx.NumberEntryDialog(self,'Detection threshold for '+str(cell_name),'Enter an number between 0 and 100','Detection threshold for '+str(cell_name),0,0,100)
 				if dialog1.ShowModal()==wx.ID_OK:
@@ -748,6 +756,7 @@ class WindowLv2_AnalyzeIntensity(wx.Frame):
 				else:
 					self.detection_threshold[cell_name]=0
 				dialog1.Destroy()
+				self.names_colors[cell_name]=(255,255-diff,255)
 			self.text_detection.SetLabel('Detector: '+detector+'; '+'The cell kinds / detection threshold: '+str(self.detection_threshold)+'.')
 		dialog.Destroy()
 
@@ -784,7 +793,7 @@ class WindowLv2_AnalyzeIntensity(wx.Frame):
 
 			for i in self.path_to_files:
 				AC=AnalyzeCells(i,self.result_path,self.path_to_detector,self.cell_kinds,detection_threshold=self.detection_threshold,expansion=self.expansion,fov_div=self.fov_div)
-				AC.channels_intensity({'cell':(255,0,255)},analysis_channel=[0,1,2])
+				AC.channels_intensity(self.names_colors,detection_channel=self.detection_channel,analysis_channels=self.analysis_channels)
 
 
 
