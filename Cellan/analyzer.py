@@ -134,7 +134,7 @@ class AnalyzeCells():
 			dfs=[]
 
 			dfs.append(pd.DataFrame([i+1 for i in range(len(cell_centers[cell_name]))],columns=['number']).reset_index(drop=True))
-			dfs.append(pd.DataFrame(cell_centers[cell_name],columns=['centers']).reset_index(drop=True))
+			dfs.append(pd.DataFrame(cell_centers[cell_name],columns=['center_x','center_y']).reset_index(drop=True))
 			dfs.append(pd.DataFrame(cell_areas[cell_name],columns=['areas']).reset_index(drop=True))
 			for c in self.analysis_channels:
 				dfs.append(pd.DataFrame(cell_intensities[cell_name][c],columns=['intensity_'+str(c)]).reset_index(drop=True))
