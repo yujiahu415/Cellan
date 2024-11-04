@@ -695,7 +695,7 @@ class WindowLv2_AnalyzeIntensity(wx.Frame):
 		self.Show(True)
 
 
-	def select_videos(self,event):
+	def select_files(self,event):
 
 		wildcard='LIF/TIF files (*.lif/*.tif)|*.lif;*.LIF;*.tif;*.TIF;*.tiff;*.TIFF'
 		dialog=wx.FileDialog(self,'Select LIF/TIF file(s)','','',wildcard,style=wx.FD_MULTIPLE)
