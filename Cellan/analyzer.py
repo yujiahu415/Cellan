@@ -24,7 +24,7 @@ class AnalyzeCells():
 		self.results_path=os.path.join(results_path,os.path.splitext(os.path.basename(self.path_to_file))[0])
 		if os.path.splitext(os.path.basename(self.path_to_file))[1] in ['.tif','.TIF','.tiff','.TIFF']:
 			self.tif=True
-		else:
+		else: 
 			self.tif=False
 		os.makedirs(self.results_path,exist_ok=True)
 		self.expansion=expansion
@@ -114,7 +114,7 @@ class AnalyzeCells():
 										cnts,_=cv2.findContours((mask*255).astype(np.uint8),cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_NONE)
 										cnt=sorted(cnts,key=cv2.contourArea,reverse=True)[0]
 										goodcontours.append(cnt)
-										cell_centers[cell_name].append((int(cv2.moments(cnt)['m10']/cv2.moments(cnt)['m00'])+int(w*fov_width),int(cv2.moments(cnt)['m01']/cv2.moments(cnt)['m00']))+int(h*fov_height))
+										cell_centers[cell_name].append((int(cv2.moments(cnt)['m10']/cv2.moments(cnt)['m00'])+int(w*fov_width),int(cv2.moments(cnt)['m01']/cv2.moments(cnt)['m00'])+int(h*fov_height)))
 										cell_areas[cell_name].append(np.sum(np.array(mask),axis=(0,1)))
 
 									for c in analysis_channels:
