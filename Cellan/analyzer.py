@@ -116,14 +116,12 @@ class AnalyzeCells():
 										cnts,_=cv2.findContours((mask*255).astype(np.uint8),cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_NONE)
 										cnt=sorted(cnts,key=cv2.contourArea,reverse=True)[0]
 										goodcontours.append(cnt)
-										cell_centers[cell_name].append((int(cv2.moments(cnt)['m10']/cv2.moments(cnt)['m00']),int(cv2.moments(cnt)['m01']/cv2.moments(cnt)['m00'])))
+										cell_centers[cell_name].append((int(cv2.moments(cnt)['m10']/cv2.moments(cnt)['m00'])+int(w*fov_width),int(cv2.moments(cnt)['m01']/cv2.moments(cnt)['m00']))+int(h*fov_height))
 										cell_areas[cell_name].append(np.sum(np.array(mask),axis=(0,1)))
 
 									for c in analysis_channels:
-
 										analysis_fov=analysis_fovs[c]
 										to_annotate=np.uint8(exposure.rescale_intensity(analysis_fov,out_range=(0,255)))
-
 										for n,cnt in enumerate(goodcontours):
 											area=cell_areas[cell_name][n]
 											if area>0:
@@ -131,7 +129,6 @@ class AnalyzeCells():
 												cv2.drawContours(to_annotate,[cnt],0,names_colors[cell_name],1)
 											else:
 												cell_intensities[cell_name][c].append(0)
-
 										cv2.imwrite(os.path.join(self.results_path,os.path.splitext(os.path.basename(self.path_to_file))[0]+'_'+str(w)+str(h)+'_c'+str(c)+'_annotated.jpg'),to_annotate)
 
 
