@@ -81,7 +81,7 @@ class WindowLv1_TrainingModule(wx.Frame):
 
 	def __init__(self,title):
 
-		super(WindowLv1_TrainingModule,self).__init__(parent=None,title=title,size=(500,360))
+		super(WindowLv1_TrainingModule,self).__init__(parent=None,title=title,size=(500,350))
 		self.dispaly_window()
 
 
@@ -600,7 +600,7 @@ class WindowLv2_AnalyzeIntensity(wx.Frame):
 
 	def __init__(self,title):
 
-		super(WindowLv2_AnalyzeIntensity,self).__init__(parent=None,title=title,size=(1000,420))
+		super(WindowLv2_AnalyzeIntensity,self).__init__(parent=None,title=title,size=(1000,400))
 		self.detector_path=None
 		self.path_to_detector=None
 		self.cell_kinds=None
