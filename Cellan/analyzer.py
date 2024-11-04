@@ -33,7 +33,7 @@ class AnalyzeCells():
 		self.fov_div=fov_div
 
 
-	def channels_intensity(self,names_colors,analysis_channel=[]):
+	def channels_intensity(self,names_colors,analysis_channels=[]):
 
 		if self.tif:
 			tifdata=imread(self.path_to_file)
@@ -42,9 +42,9 @@ class AnalyzeCells():
 			lifdata=LifFile(self.path_to_file)
 			file=[i for i in lifdata.get_iter_image()][0]
 
-		if len(analysis_channel)==0:
+		if len(analysis_channels)==0:
 			c_list=[i for i in file.get_iter_c(t=0,z=0)]
-			analysis_channel=[c for c in range(c_list)]
+			analysis_channels=[c for c in range(c_list)]
 
 		if self.detection_threshold is None:
 			self.detection_threshold={}
@@ -61,7 +61,7 @@ class AnalyzeCells():
 			cell_centers[cell_name]=[]
 			cell_areas[cell_name]=[]
 			cell_intensities[cell_name]={}
-			for c in analysis_channel:
+			for c in analysis_channels:
 				cell_intensities[cell_name][c]=[]
 
 		detect_image=np.array(file.get_frame(z=0,t=0,c=detection_channel))
@@ -77,7 +77,7 @@ class AnalyzeCells():
 
 				detect_fov=np.uint8(exposure.rescale_intensity(detect_image[w*fov_width:(w+1)*fov_width,h*fov_height:(h+1)*fov_height],out_range=(0,255)))
 				analysis_fovs={}
-				for c in analysis_channel:
+				for c in analysis_channels:
 					analysis_fovs[c]=np.array(file.get_frame(z=0,t=0,c=c))[w*fov_width:(w+1)*fov_width,h*fov_height:(h+1)*fov_height]
 				output=self.detector.inference([{'image':torch.as_tensor(detect_fov.astype('float32').transpose(2,0,1))}])
 				instances=output[0]['instances'].to('cpu')
@@ -119,7 +119,7 @@ class AnalyzeCells():
 										cell_centers[cell_name].append((int(cv2.moments(cnt)['m10']/cv2.moments(cnt)['m00']),int(cv2.moments(cnt)['m01']/cv2.moments(cnt)['m00'])))
 										cell_areas[cell_name].append(np.sum(np.array(mask),axis=(0,1)))
 
-									for c in analysis_channel:
+									for c in analysis_channels:
 
 										analysis_fov=analysis_fovs[c]
 										to_annotate=np.uint8(exposure.rescale_intensity(analysis_fov,out_range=(0,255)))
