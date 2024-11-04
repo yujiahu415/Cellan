@@ -1,11 +1,9 @@
 from .detector import Detector
 import os
 import cv2
-import json
 import torch
 import datetime
 import numpy as np
-from scipy.spatial import distance
 import pandas as pd
 from readlif.reader import LifFile
 from tifffile import imread
