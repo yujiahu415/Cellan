@@ -5,7 +5,6 @@ import wx.lib.agw.hyperlink as hl
 from pathlib import Path
 import json
 import shutil
-import pandas as pd
 from .analyzer import AnalyzeCells
 from .detector import Detector
 from .tools import extract_images
