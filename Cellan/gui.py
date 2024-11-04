@@ -142,7 +142,7 @@ class WindowLv1_AnalysisModule(wx.Frame):
 
 	def __init__(self,title):
 
-		super(WindowLv1_AnalysisModule,self).__init__(parent=None,title=title,size=(500,150))
+		super(WindowLv1_AnalysisModule,self).__init__(parent=None,title=title,size=(500,170))
 		self.dispaly_window()
 
 
@@ -155,7 +155,7 @@ class WindowLv1_AnalysisModule(wx.Frame):
 		button_analyzeintensity=wx.Button(panel,label='Analyze Signal Intensity',size=(300,40))
 		button_analyzeintensity.Bind(wx.EVT_BUTTON,self.analyze_intensity)
 		wx.Button.SetToolTip(button_analyzeintensity,
-			'Automatically detect neural structures of your interest and analyze their calcium signals.')
+			'Automatically detect cells of your interest and analyze the pixel intensities in them.')
 		boxsizer.Add(button_analyzeintensity,0,wx.ALIGN_CENTER,10)
 		boxsizer.Add(0,30,0)
 
@@ -175,7 +175,7 @@ class WindowLv2_GenerateImages(wx.Frame):
 
 	def __init__(self,title):
 
-		super(WindowLv2_GenerateImages,self).__init__(parent=None,title=title,size=(1000,330))
+		super(WindowLv2_GenerateImages,self).__init__(parent=None,title=title,size=(1000,240))
 		self.path_to_files=None
 		self.result_path=None
 		self.fov_div=1
