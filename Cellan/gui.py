@@ -808,12 +808,10 @@ class WindowLv2_AnalyzeIntensity(wx.Frame):
 				for i in channels:
 					self.analysis_channels.append(int(i))
 			except:
-				wx.MessageBox('The name already exists.','Error',wx.OK|wx.ICON_ERROR)
-
+				wx.MessageBox('Please enter the number of channels for analysis in\ncorrect format! For example: 0,1,2','Error',wx.OK|wx.ICON_ERROR)
 		dialog.Destroy()
 
-
-		self.text_startanalyze.SetLabel(text+' main channel: '+str(self.main_channel)+'.')
+		self.text_channels.SetLabel('Channel for detection: '+str(self.detection_channel)+'; Channels for analysis: '+str(self.analysis_channels))
 
 
 	def analyze_intensity(self,event):
