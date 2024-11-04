@@ -33,7 +33,7 @@ class AnalyzeCells():
 		self.fov_div=fov_div
 
 
-	def channels_intensity(self,names_colors,analysis_channels=[]):
+	def channels_intensity(self,names_colors,detection_channel=0,analysis_channels=[]):
 
 		if self.tif:
 			tifdata=imread(self.path_to_file)
