@@ -131,6 +131,19 @@ class AnalyzeCells():
 												cell_intensities[cell_name][c].append(0)
 										cv2.imwrite(os.path.join(self.results_path,os.path.splitext(os.path.basename(self.path_to_file))[0]+'_'+str(w)+str(h)+'_c'+str(c)+'_annotated.jpg'),to_annotate)
 
+		for cell_name in self.cell_kinds:
+
+			dfs=[]
+
+			dfs.append(pd.DataFrame([i+1 for i in range(len(cell_centers[cell_name]))],columns=['number']).reset_index(drop=True))
+			dfs.append(pd.DataFrame(cell_centers[cell_name],columns=['centers']).reset_index(drop=True))
+			dfs.append(pd.DataFrame(cell_areas[cell_name],columns=['areas']).reset_index(drop=True))
+			for c in self.analysis_channels:
+				dfs.append(pd.DataFrame(cell_intensities[cell_name][c],columns=['intensity_'+str(c)]).reset_index(drop=True))
+
+			out_sheet=os.path.join(self.results_path,cell_name+'_summary.xlsx')
+			pd.concat(dfs,axis=1).to_excel(out_sheet,float_format='%.2f',index_label='ID/parameter')
+
 
 		print('Analysis completed!')
 
