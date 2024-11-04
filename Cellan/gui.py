@@ -600,7 +600,7 @@ class WindowLv2_AnalyzeIntensity(wx.Frame):
 
 	def __init__(self,title):
 
-		super(WindowLv2_AnalyzeIntensity,self).__init__(parent=None,title=title,size=(1000,400))
+		super(WindowLv2_AnalyzeIntensity,self).__init__(parent=None,title=title,size=(1000,500))
 		self.detector_path=None
 		self.path_to_detector=None
 		self.cell_kinds=None
@@ -670,6 +670,16 @@ class WindowLv2_AnalyzeIntensity(wx.Frame):
 		module_expansion.Add(button_expansion,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
 		module_expansion.Add(self.text_expansion,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
 		boxsizer.Add(module_expansion,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
+		boxsizer.Add(0,5,0)
+
+		module_channels=wx.BoxSizer(wx.HORIZONTAL)
+		button_channels=wx.Button(panel,label='Specify the channels for\ndetection and analysis',size=(300,40))
+		button_channels.Bind(wx.EVT_BUTTON,self.specify_channels)
+		wx.Button.SetToolTip(button_channels,'Specify the channel used for detecting the cells and those used for analyzing the pixel intensity of the cells')
+		self.text_channels=wx.StaticText(panel,label='Default: detection channel: 0; analysis channels: all channels',style=wx.ALIGN_LEFT|wx.ST_ELLIPSIZE_END)
+		module_channels.Add(button_channels,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
+		module_channels.Add(self.text_channels,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
+		boxsizer.Add(module_channels,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
 		boxsizer.Add(0,5,0)
 
 		button_analyze=wx.Button(panel,label='Start to analyze cells',size=(300,40))
