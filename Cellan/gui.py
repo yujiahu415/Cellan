@@ -758,7 +758,7 @@ class WindowLv2_AnalyzeIntensity(wx.Frame):
 				diff=int(255/len(self.cell_kinds))
 			else:
 				diff=0
-			for cell_name in cell_kinds:
+			for cell_name in self.cell_kinds:
 				dialog1=wx.NumberEntryDialog(self,'Detection threshold for '+str(cell_name),'Enter an number between 0 and 100','Detection threshold for '+str(cell_name),0,0,100)
 				if dialog1.ShowModal()==wx.ID_OK:
 					self.detection_threshold[cell_name]=int(dialog1.GetValue())/100
