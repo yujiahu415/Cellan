@@ -66,8 +66,8 @@ class AnalyzeCells():
 
 		detect_image=np.array(file.get_frame(z=0,t=0,c=detection_channel))
 		detect_image=cv2.cvtColor(detect_image,cv2.COLOR_GRAY2BGR)
-		width=detect_image.shape[0]
-		height=detect_image.shape[1]
+		width=detect_image.shape[1]
+		height=detect_image.shape[0]
 		fov_width=int(width/self.fov_div)
 		fov_height=int(height/self.fov_div)
 
@@ -75,10 +75,10 @@ class AnalyzeCells():
 
 			for h in range(self.fov_div):
 
-				detect_fov=np.uint8(exposure.rescale_intensity(detect_image[w*fov_width:(w+1)*fov_width,h*fov_height:(h+1)*fov_height],out_range=(0,255)))
+				detect_fov=np.uint8(exposure.rescale_intensity(detect_image[h*fov_height:(h+1)*fov_height,w*fov_width:(w+1)*fov_width],out_range=(0,255)))
 				analysis_fovs={}
 				for c in analysis_channels:
-					analysis_fovs[c]=np.array(file.get_frame(z=0,t=0,c=c))[w*fov_width:(w+1)*fov_width,h*fov_height:(h+1)*fov_height]
+					analysis_fovs[c]=np.array(file.get_frame(z=0,t=0,c=c))[h*fov_height:(h+1)*fov_height,w*fov_width:(w+1)*fov_width]
 				output=self.detector.inference([{'image':torch.as_tensor(detect_fov.astype('float32').transpose(2,0,1))}])
 				instances=output[0]['instances'].to('cpu')
 				masks=instances.pred_masks.numpy().astype(np.uint8)
