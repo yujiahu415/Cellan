@@ -325,7 +325,7 @@ class WindowLv2_TrainDetectors(wx.Frame):
 		button_inferencingsize=wx.Button(panel,label='Specify the inferencing framesize\nfor the Detector to train',size=(300,40))
 		button_inferencingsize.Bind(wx.EVT_BUTTON,self.input_inferencingsize)
 		wx.Button.SetToolTip(button_inferencingsize,'Should be an even number. Larger size means higher accuracy but slower speed.')
-		self.text_inferencingsize=wx.StaticText(panel,label='Default: 512.',style=wx.ALIGN_LEFT|wx.ST_ELLIPSIZE_END)
+		self.text_inferencingsize=wx.StaticText(panel,label='Default: 1280.',style=wx.ALIGN_LEFT|wx.ST_ELLIPSIZE_END)
 		module_inferencingsize.Add(button_inferencingsize,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
 		module_inferencingsize.Add(self.text_inferencingsize,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
 		boxsizer.Add(module_inferencingsize,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
@@ -335,7 +335,7 @@ class WindowLv2_TrainDetectors(wx.Frame):
 		button_iterations=wx.Button(panel,label='Specify the iteration number\nfor the Detector training',size=(300,40))
 		button_iterations.Bind(wx.EVT_BUTTON,self.input_iterations)
 		wx.Button.SetToolTip(button_iterations,'More training iterations typically yield higher accuracy but take longer.')
-		self.text_iterations=wx.StaticText(panel,label='Default: 1000.',style=wx.ALIGN_LEFT|wx.ST_ELLIPSIZE_END)
+		self.text_iterations=wx.StaticText(panel,label='Default: 5000.',style=wx.ALIGN_LEFT|wx.ST_ELLIPSIZE_END)
 		module_iterations.Add(button_iterations,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
 		module_iterations.Add(self.text_iterations,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
 		boxsizer.Add(module_iterations,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
@@ -600,7 +600,7 @@ class WindowLv2_AnalyzeIntensity(wx.Frame):
 
 	def __init__(self,title):
 
-		super(WindowLv2_AnalyzeIntensity,self).__init__(parent=None,title=title,size=(1000,500))
+		super(WindowLv2_AnalyzeIntensity,self).__init__(parent=None,title=title,size=(1000,420))
 		self.detector_path=None
 		self.path_to_detector=None
 		self.cell_kinds=None
