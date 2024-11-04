@@ -793,6 +793,29 @@ class WindowLv2_AnalyzeIntensity(wx.Frame):
 		dialog.Destroy()
 
 
+	def specify_channels(self,event):
+
+		dialog=wx.NumberEntryDialog(self,'Channel for detection','Enter a number\n(the 1st channel is 0)','Channel for detection',0,0,10)
+		if dialog.ShowModal()==wx.ID_OK:
+			self.detection_channel=int(dialog.GetValue())
+		dialog.Destroy()
+
+		dialog=wx.TextEntryDialog(self,'Enter the channels for analysis\n(use "," to separate each channle)','Channels for analysis')
+		if dialog.ShowModal()==wx.ID_OK:
+			entry=dialog.GetValue()
+			try:
+				channels=entry.split(',')
+				for i in channels:
+					self.analysis_channels.append(int(i))
+			except:
+				wx.MessageBox('The name already exists.','Error',wx.OK|wx.ICON_ERROR)
+
+		dialog.Destroy()
+
+
+		self.text_startanalyze.SetLabel(text+' main channel: '+str(self.main_channel)+'.')
+
+
 	def analyze_intensity(self,event):
 
 		if self.path_to_files is None or self.result_path is None or self.path_to_detector is None:
