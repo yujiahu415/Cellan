@@ -53,12 +53,12 @@ class Detector():
 		print('Cell names in annotation file: '+str(model_parameters_dict['cell_names']))
 
 		cfg=get_cfg()
-		cfg.merge_from_file(model_zoo.get_config_file("COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml"))
+		cfg.merge_from_file(model_zoo.get_config_file('COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml'))
 		cfg.OUTPUT_DIR=path_to_detector
 		cfg.DATASETS.TRAIN=('Cellan_detector_train',)
 		cfg.DATASETS.TEST=()
 		cfg.DATALOADER.NUM_WORKERS=4
-		cfg.MODEL.WEIGHTS=model_zoo.get_checkpoint_url("COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml")
+		cfg.MODEL.WEIGHTS=model_zoo.get_checkpoint_url('COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml')
 		cfg.MODEL.ROI_HEADS.BATCH_SIZE_PER_IMAGE=512
 		cfg.MODEL.ROI_HEADS.NUM_CLASSES=int(len(classnames))
 		cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST=0.5
