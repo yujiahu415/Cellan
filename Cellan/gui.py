@@ -292,7 +292,7 @@ class WindowLv2_GenerateImages(wx.Frame):
 
 			print('Generating image examples...')
 			for i in self.path_to_files:
-				extract_images(i,self.result_path,self.fov_div)
+				extract_images(i,self.result_path,self.fov_div,imagewidth=self.imagewidth)
 			print('Image example generation completed!')
 
 
