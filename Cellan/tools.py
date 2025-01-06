@@ -7,7 +7,7 @@ from skimage import exposure
 
 
 
-def extract_images(path_to_file,out_folder,fov_div):
+def extract_images(path_to_file,out_folder,fov_div,imagewidth=None):
 
 	if os.path.splitext(os.path.basename(path_to_file))[1] in ['.tif','.TIF','.tiff','.TIFF','.svs','.SVS']:
 
@@ -21,6 +21,8 @@ def extract_images(path_to_file,out_folder,fov_div):
 			for h in range(fov_div):
 
 				fov=np.uint8(exposure.rescale_intensity(image[h*fov_height:(h+1)*fov_height,w*fov_width:(w+1)*fov_width],out_range=(0,255)))
+				if imagewidth is not None:
+					fov=cv2.resize(fov,(imagewidth,int(fov.shape[0]*imagewidth/fov.shape[1])),interpolation=cv2.INTER_AREA)
 				cv2.imwrite(os.path.join(out_folder,os.path.splitext(os.path.basename(path_to_file))[0]+'_'+str(w)+str(h)+'.png'),fov)
 
 	else:
@@ -42,4 +44,6 @@ def extract_images(path_to_file,out_folder,fov_div):
 
 					image=np.array(file.get_frame(z=0,t=0,c=c))
 					fov=np.uint8(exposure.rescale_intensity(image[h*fov_height:(h+1)*fov_height,w*fov_width:(w+1)*fov_width],out_range=(0,255)))
+					if imagewidth is not None:
+						fov=cv2.resize(fov,(imagewidth,int(fov.shape[0]*imagewidth/fov.shape[1])),interpolation=cv2.INTER_AREA)
 					cv2.imwrite(os.path.join(out_folder,os.path.splitext(os.path.basename(path_to_file))[0]+'_'+str(w)+str(h)+'_c'+str(c)+'.png'),fov)
