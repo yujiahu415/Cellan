@@ -178,6 +178,7 @@ class WindowLv2_GenerateImages(wx.Frame):
 		self.path_to_files=None
 		self.result_path=None
 		self.fov_div=1
+		self.imagewidth=None
 
 		self.dispaly_window()
 
@@ -260,7 +261,24 @@ class WindowLv2_GenerateImages(wx.Frame):
 			self.fov_div=int(dialog.GetValue())
 		else:
 			self.fov_div=1
-		self.text_fov.SetLabel('The height and width of an image will be divided by : '+str(self.fov_div)+'.')
+		
+		dialog.Destroy()
+
+		dialog=wx.MessageDialog(self,'Proportional resize the field of views? Downsizing may make the analysis more efficient.','(Optional) resize the filed of views?',wx.YES_NO|wx.ICON_QUESTION)
+		if dialog.ShowModal()==wx.ID_YES:
+			dialog1=wx.NumberEntryDialog(self,'Enter the desired image width','The unit is pixel:','Desired image width',1280,1,10000)
+			if dialog1.ShowModal()==wx.ID_OK:
+				self.imagewidth=int(dialog1.GetValue())
+				if self.imagewidth<128:
+					self.imagewidth=128
+				self.text_fov.SetLabel('The height and width of an image will be divided by : '+str(self.fov_div)+' (resize fov width to '+str(self.imagewidth)+').')
+			else:
+				self.imagewidth=None
+				self.text_fov.SetLabel('The height and width of an image will be divided by : '+str(self.fov_div)+' (No resizing of fov).')
+			dialog1.Destroy()
+		else:
+			self.imagewidth=None
+			self.text_fov.SetLabel('The height and width of an image will be divided by : '+str(self.fov_div)+' (No resizing of fov).')
 		dialog.Destroy()
 
 
