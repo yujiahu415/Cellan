@@ -864,7 +864,7 @@ class WindowLv2_AnalyzeMultiChannels(wx.Frame):
 
 			for i in self.path_to_files:
 				AC=AnalyzeCells(i,self.result_path,self.path_to_detector,self.cell_kinds,detection_threshold=self.detection_threshold,expansion=self.expansion,fov_div=self.fov_div)
-				AC.channels_intensity(self.names_colors,detection_channel=self.detection_channel,analysis_channels=self.analysis_channels)
+				AC.analyze_multichannels(self.names_colors,detection_channel=self.detection_channel,analysis_channels=self.analysis_channels)
 
 
 
@@ -1063,7 +1063,7 @@ class WindowLv2_AnalyzeSingleChannel(wx.Frame):
 
 			for i in self.path_to_files:
 				AC=AnalyzeCells(i,self.result_path,self.path_to_detector,self.cell_kinds,detection_threshold=self.detection_threshold,expansion=self.expansion,fov_div=self.fov_div)
-				AC.channels_intensity(self.names_colors,detection_channel=self.detection_channel,analysis_channels=self.analysis_channels)
+				AC.analyze_singlechannel(self.names_colors)
 
 
 
