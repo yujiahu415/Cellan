@@ -31,7 +31,7 @@ class AnalyzeCells():
 		self.fov_div=fov_div
 
 
-	def channels_intensity(self,names_colors,detection_channel=0,analysis_channels=[]):
+	def analyze_multichannels(self,names_colors,detection_channel=0,analysis_channels=[]):
 
 		if self.detection_threshold is None:
 			self.detection_threshold={}
