@@ -723,7 +723,7 @@ class WindowLv2_AnalyzeMultiChannels(wx.Frame):
 		boxsizer.Add(0,5,0)
 
 		button_analyze=wx.Button(panel,label='Start to analyze cells',size=(300,40))
-		button_analyze.Bind(wx.EVT_BUTTON,self.analyze_intensity)
+		button_analyze.Bind(wx.EVT_BUTTON,self.analyze_cells)
 		wx.Button.SetToolTip(button_analyze,'Will output the numbers, areas, and pixel intensities for each cell of interest.')
 		boxsizer.Add(0,5,0)
 		boxsizer.Add(button_analyze,0,wx.RIGHT|wx.ALIGN_RIGHT,90)
@@ -854,7 +854,7 @@ class WindowLv2_AnalyzeMultiChannels(wx.Frame):
 		self.text_channels.SetLabel('Channel for detection: '+str(self.detection_channel)+'; Channels for analysis: '+str(self.analysis_channels))
 
 
-	def analyze_intensity(self,event):
+	def analyze_cells(self,event):
 
 		if self.path_to_files is None or self.result_path is None or self.path_to_detector is None:
 
@@ -872,7 +872,7 @@ class WindowLv2_AnalyzeSingleChannel(wx.Frame):
 
 	def __init__(self,title):
 
-		super(WindowLv2_AnalyzeSingleChannel,self).__init__(parent=None,title=title,size=(1000,380))
+		super(WindowLv2_AnalyzeSingleChannel,self).__init__(parent=None,title=title,size=(1000,350))
 		self.detector_path=None
 		self.path_to_detector=None
 		self.cell_kinds=None
@@ -882,8 +882,6 @@ class WindowLv2_AnalyzeSingleChannel(wx.Frame):
 		self.expansion=None
 		self.fov_div=1
 		self.names_colors=None
-		self.detection_channel=0
-		self.analysis_channels=[]
 		
 		self.dispaly_window()
 
@@ -894,9 +892,9 @@ class WindowLv2_AnalyzeSingleChannel(wx.Frame):
 		boxsizer=wx.BoxSizer(wx.VERTICAL)
 
 		module_inputfiles=wx.BoxSizer(wx.HORIZONTAL)
-		button_inputfiles=wx.Button(panel,label='Select the LIF/TIF/SVS file(s)\nfor analyzing cells',size=(300,40))
+		button_inputfiles=wx.Button(panel,label='Select the TIF/SVS file(s)\nfor analyzing cells',size=(300,40))
 		button_inputfiles.Bind(wx.EVT_BUTTON,self.select_files)
-		wx.Button.SetToolTip(button_inputfiles,'Select one or more *.LIF or *.TIF or *.SVS file(s).')
+		wx.Button.SetToolTip(button_inputfiles,'Select one or more *.TIF or *.SVS file(s).')
 		self.text_inputfiles=wx.StaticText(panel,label='None.',style=wx.ALIGN_LEFT|wx.ST_ELLIPSIZE_END)
 		module_inputfiles.Add(button_inputfiles,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
 		module_inputfiles.Add(self.text_inputfiles,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
@@ -944,19 +942,9 @@ class WindowLv2_AnalyzeSingleChannel(wx.Frame):
 		boxsizer.Add(module_expansion,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
 		boxsizer.Add(0,5,0)
 
-		module_channels=wx.BoxSizer(wx.HORIZONTAL)
-		button_channels=wx.Button(panel,label='Specify the channels for\ndetection and analysis',size=(300,40))
-		button_channels.Bind(wx.EVT_BUTTON,self.specify_channels)
-		wx.Button.SetToolTip(button_channels,'Specify the channel used for detecting the cells and those used for analyzing the pixel intensity of the cells')
-		self.text_channels=wx.StaticText(panel,label='Default: detection channel: 0; analysis channels: all channels',style=wx.ALIGN_LEFT|wx.ST_ELLIPSIZE_END)
-		module_channels.Add(button_channels,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
-		module_channels.Add(self.text_channels,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
-		boxsizer.Add(module_channels,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
-		boxsizer.Add(0,5,0)
-
 		button_analyze=wx.Button(panel,label='Start to analyze cells',size=(300,40))
-		button_analyze.Bind(wx.EVT_BUTTON,self.analyze_intensity)
-		wx.Button.SetToolTip(button_analyze,'Will output ...')
+		button_analyze.Bind(wx.EVT_BUTTON,self.analyze_cells)
+		wx.Button.SetToolTip(button_analyze,'Will output the numbers, areas, and pixel intensities for each cell of interest.')
 		boxsizer.Add(0,5,0)
 		boxsizer.Add(button_analyze,0,wx.RIGHT|wx.ALIGN_RIGHT,90)
 		boxsizer.Add(0,10,0)
@@ -969,8 +957,8 @@ class WindowLv2_AnalyzeSingleChannel(wx.Frame):
 
 	def select_files(self,event):
 
-		wildcard='LIF/TIF/SVS files (*.lif/*.tif/*.svs)|*.lif;*.LIF;*.tif;*.TIF;*.tiff;*.TIFF;*.svs;*.SVS'
-		dialog=wx.FileDialog(self,'Select LIF/TIF/SVS file(s)','','',wildcard,style=wx.FD_MULTIPLE)
+		wildcard='TIF/SVS files (*.tif/*.svs)|*.tif;*.TIF;*.tiff;*.TIFF;*.svs;*.SVS'
+		dialog=wx.FileDialog(self,'Select TIF/SVS file(s)','','',wildcard,style=wx.FD_MULTIPLE)
 		if dialog.ShowModal()==wx.ID_OK:
 			self.path_to_files=dialog.GetPaths()
 			path=os.path.dirname(self.path_to_files[0])
@@ -1065,28 +1053,7 @@ class WindowLv2_AnalyzeSingleChannel(wx.Frame):
 		dialog.Destroy()
 
 
-	def specify_channels(self,event):
-
-		dialog=wx.NumberEntryDialog(self,'Channel for detection','Enter a number\n(the 1st channel is 0)','Channel for detection',0,0,10)
-		if dialog.ShowModal()==wx.ID_OK:
-			self.detection_channel=int(dialog.GetValue())
-		dialog.Destroy()
-
-		dialog=wx.TextEntryDialog(self,'Enter the channels for analysis\n(use "," to separate each channle)','Channels for analysis')
-		if dialog.ShowModal()==wx.ID_OK:
-			entry=dialog.GetValue()
-			try:
-				channels=entry.split(',')
-				for i in channels:
-					self.analysis_channels.append(int(i))
-			except:
-				wx.MessageBox('Please enter the number of channels for analysis in\ncorrect format! For example: 0,1,2','Error',wx.OK|wx.ICON_ERROR)
-		dialog.Destroy()
-
-		self.text_channels.SetLabel('Channel for detection: '+str(self.detection_channel)+'; Channels for analysis: '+str(self.analysis_channels))
-
-
-	def analyze_intensity(self,event):
+	def analyze_cells(self,event):
 
 		if self.path_to_files is None or self.result_path is None or self.path_to_detector is None:
 
