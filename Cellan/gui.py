@@ -141,7 +141,7 @@ class WindowLv1_AnalysisModule(wx.Frame):
 
 	def __init__(self,title):
 
-		super(WindowLv1_AnalysisModule,self).__init__(parent=None,title=title,size=(500,170))
+		super(WindowLv1_AnalysisModule,self).__init__(parent=None,title=title,size=(500,220))
 		self.dispaly_window()
 
 
@@ -149,14 +149,21 @@ class WindowLv1_AnalysisModule(wx.Frame):
 
 		panel=wx.Panel(self)
 		boxsizer=wx.BoxSizer(wx.VERTICAL)
-		boxsizer.Add(0,40,0)
+		boxsizer.Add(0,60,0)
 
-		button_analyzeintensity=wx.Button(panel,label='Analyze Signal Intensity',size=(300,40))
-		button_analyzeintensity.Bind(wx.EVT_BUTTON,self.analyze_intensity)
-		wx.Button.SetToolTip(button_analyzeintensity,
-			'Automatically detect cells of your interest and analyze the pixel intensities in them.')
-		boxsizer.Add(button_analyzeintensity,0,wx.ALIGN_CENTER,10)
-		boxsizer.Add(0,30,0)
+		button_analyzemultichannels=wx.Button(panel,label='Analyze Multichannel Images',size=(300,40))
+		button_analyzemultichannels.Bind(wx.EVT_BUTTON,self.analyze_multichannels)
+		wx.Button.SetToolTip(button_analyzemultichannels,
+			'Automatically detect cells of your interest and analyze their numbers, areas, and pixel intensities in multi-channel images.')
+		boxsizer.Add(button_analyzemultichannels,0,wx.ALIGN_CENTER,10)
+		boxsizer.Add(0,5,0)
+
+		button_analyzesinglechannel=wx.Button(panel,label='Analyze Singlechannel Images',size=(300,40))
+		button_analyzesinglechannel.Bind(wx.EVT_BUTTON,self.analyze_singlechannels)
+		wx.Button.SetToolTip(button_analyzesinglechannel,
+			'Automatically detect cells of your interest and analyze their numbers, areas, and pixel intensities in single-channel images.')
+		boxsizer.Add(button_analyzesinglechannel,0,wx.ALIGN_CENTER,10)
+		boxsizer.Add(0,50,0)
 
 		panel.SetSizer(boxsizer)
 
@@ -164,9 +171,14 @@ class WindowLv1_AnalysisModule(wx.Frame):
 		self.Show(True)
 
 
-	def analyze_intensity(self,event):
+	def analyze_multichannels(self,event):
 
-		WindowLv2_AnalyzeIntensity('Analyze Signal Intensity')
+		WindowLv2_AnalyzeMultiChannels('Analyze Multichannel Images')
+
+
+	def analyze_singlechannels(self,event):
+
+		WindowLv2_AnalyzeSingleChannel('Analyze Singlechannel Images')
 
 
 
@@ -624,11 +636,243 @@ class WindowLv2_TestDetectors(wx.Frame):
 
 
 
-class WindowLv2_AnalyzeIntensity(wx.Frame):
+class WindowLv2_AnalyzeMultiChannels(wx.Frame):
 
 	def __init__(self,title):
 
-		super(WindowLv2_AnalyzeIntensity,self).__init__(parent=None,title=title,size=(1000,380))
+		super(WindowLv2_AnalyzeMultiChannels,self).__init__(parent=None,title=title,size=(1000,380))
+		self.detector_path=None
+		self.path_to_detector=None
+		self.cell_kinds=None
+		self.path_to_files=None
+		self.result_path=None
+		self.detection_threshold=None
+		self.expansion=None
+		self.fov_div=1
+		self.names_colors=None
+		self.detection_channel=0
+		self.analysis_channels=[]
+		
+		self.dispaly_window()
+
+
+	def dispaly_window(self):
+
+		panel=wx.Panel(self)
+		boxsizer=wx.BoxSizer(wx.VERTICAL)
+
+		module_inputfiles=wx.BoxSizer(wx.HORIZONTAL)
+		button_inputfiles=wx.Button(panel,label='Select the LIF/TIF file(s)\nfor analyzing cells',size=(300,40))
+		button_inputfiles.Bind(wx.EVT_BUTTON,self.select_files)
+		wx.Button.SetToolTip(button_inputfiles,'Select one or more *.LIF or *.TIF file(s).')
+		self.text_inputfiles=wx.StaticText(panel,label='None.',style=wx.ALIGN_LEFT|wx.ST_ELLIPSIZE_END)
+		module_inputfiles.Add(button_inputfiles,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
+		module_inputfiles.Add(self.text_inputfiles,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
+		boxsizer.Add(0,10,0)
+		boxsizer.Add(module_inputfiles,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
+		boxsizer.Add(0,5,0)
+
+		module_outputfolder=wx.BoxSizer(wx.HORIZONTAL)
+		button_outputfolder=wx.Button(panel,label='Select a folder to store\nthe analysis results',size=(300,40))
+		button_outputfolder.Bind(wx.EVT_BUTTON,self.select_outpath)
+		wx.Button.SetToolTip(button_outputfolder,'Will create a subfolder for each file in the selected folder.')
+		self.text_outputfolder=wx.StaticText(panel,label='None.',style=wx.ALIGN_LEFT|wx.ST_ELLIPSIZE_END)
+		module_outputfolder.Add(button_outputfolder,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
+		module_outputfolder.Add(self.text_outputfolder,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
+		boxsizer.Add(module_outputfolder,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
+		boxsizer.Add(0,5,0)
+
+		module_detection=wx.BoxSizer(wx.HORIZONTAL)
+		button_detection=wx.Button(panel,label='Select the Detector to\ndetect cells',size=(300,40))
+		button_detection.Bind(wx.EVT_BUTTON,self.select_detector)
+		wx.Button.SetToolTip(button_detection,'A trained Detector can detect cells of your interest.')
+		self.text_detection=wx.StaticText(panel,label='None',style=wx.ALIGN_LEFT|wx.ST_ELLIPSIZE_END)
+		module_detection.Add(button_detection,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
+		module_detection.Add(self.text_detection,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
+		boxsizer.Add(module_detection,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
+		boxsizer.Add(0,5,0)
+
+		module_fov=wx.BoxSizer(wx.HORIZONTAL)
+		button_fov=wx.Button(panel,label='Specify the field of view\nin an image',size=(300,40))
+		button_fov.Bind(wx.EVT_BUTTON,self.specify_fov)
+		wx.Button.SetToolTip(button_fov,'Specify the number (n) of field of view for height/width, the image will be divided into smaller field of view with the dimension of (height/n) X (width/n).')
+		self.text_fov=wx.StaticText(panel,label='Default: 1',style=wx.ALIGN_LEFT|wx.ST_ELLIPSIZE_END)
+		module_fov.Add(button_fov,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
+		module_fov.Add(self.text_fov,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
+		boxsizer.Add(module_fov,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
+		boxsizer.Add(0,5,0)
+
+		module_expansion=wx.BoxSizer(wx.HORIZONTAL)
+		button_expansion=wx.Button(panel,label='Specify the expansion\nof a cell',size=(300,40))
+		button_expansion.Bind(wx.EVT_BUTTON,self.specify_expansion)
+		wx.Button.SetToolTip(button_expansion,'If the Detector detects the cell outlines, enter 1. If the Detector detects the nuclei, enter a number > 1 to detect areas outside the nuclei.')
+		self.text_expansion=wx.StaticText(panel,label='Default: 1',style=wx.ALIGN_LEFT|wx.ST_ELLIPSIZE_END)
+		module_expansion.Add(button_expansion,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
+		module_expansion.Add(self.text_expansion,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
+		boxsizer.Add(module_expansion,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
+		boxsizer.Add(0,5,0)
+
+		module_channels=wx.BoxSizer(wx.HORIZONTAL)
+		button_channels=wx.Button(panel,label='Specify the channels for\ndetection and analysis',size=(300,40))
+		button_channels.Bind(wx.EVT_BUTTON,self.specify_channels)
+		wx.Button.SetToolTip(button_channels,'Specify the channel used for detecting the cells and those used for analyzing the pixel intensity of the cells')
+		self.text_channels=wx.StaticText(panel,label='Default: detection channel: 0; analysis channels: all channels',style=wx.ALIGN_LEFT|wx.ST_ELLIPSIZE_END)
+		module_channels.Add(button_channels,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
+		module_channels.Add(self.text_channels,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
+		boxsizer.Add(module_channels,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
+		boxsizer.Add(0,5,0)
+
+		button_analyze=wx.Button(panel,label='Start to analyze cells',size=(300,40))
+		button_analyze.Bind(wx.EVT_BUTTON,self.analyze_intensity)
+		wx.Button.SetToolTip(button_analyze,'Will output the numbers, areas, and pixel intensities for each cell of interest.')
+		boxsizer.Add(0,5,0)
+		boxsizer.Add(button_analyze,0,wx.RIGHT|wx.ALIGN_RIGHT,90)
+		boxsizer.Add(0,10,0)
+
+		panel.SetSizer(boxsizer)
+
+		self.Centre()
+		self.Show(True)
+
+
+	def select_files(self,event):
+
+		wildcard='LIF/TIF files (*.lif/*.tif)|*.lif;*.LIF;*.tif;*.TIF;*.tiff;*.TIFF'
+		dialog=wx.FileDialog(self,'Select LIF/TIF file(s)','','',wildcard,style=wx.FD_MULTIPLE)
+		if dialog.ShowModal()==wx.ID_OK:
+			self.path_to_files=dialog.GetPaths()
+			path=os.path.dirname(self.path_to_files[0])
+			self.text_inputfiles.SetLabel('Selected '+str(len(self.path_to_files))+' file(s) in: '+path+'.')
+		dialog.Destroy()
+
+
+	def select_outpath(self,event):
+
+		dialog=wx.DirDialog(self,'Select a directory','',style=wx.DD_DEFAULT_STYLE)
+		if dialog.ShowModal()==wx.ID_OK:
+			self.result_path=dialog.GetPath()
+			self.text_outputfolder.SetLabel('Results will be in: '+self.result_path+'.')
+		dialog.Destroy()
+
+
+	def select_detector(self,event):
+
+		self.detector_path=os.path.join(the_absolute_current_path,'detectors')
+
+		detectors=[i for i in os.listdir(self.detector_path) if os.path.isdir(os.path.join(self.detector_path,i))]
+		if '__pycache__' in detectors:
+			detectors.remove('__pycache__')
+		if '__init__' in detectors:
+			detectors.remove('__init__')
+		if '__init__.py' in detectors:
+			detectors.remove('__init__.py')
+		detectors.sort()
+		if 'Choose a new directory of the Detector' not in detectors:
+			detectors.append('Choose a new directory of the Detector')
+
+		dialog=wx.SingleChoiceDialog(self,message='Select a Detector',caption='Select a Detector',choices=detectors)
+		if dialog.ShowModal()==wx.ID_OK:
+			detector=dialog.GetStringSelection()
+			if detector=='Choose a new directory of the Detector':
+				dialog1=wx.DirDialog(self,'Select a directory','',style=wx.DD_DEFAULT_STYLE)
+				if dialog1.ShowModal()==wx.ID_OK:
+					self.path_to_detector=dialog1.GetPaths()
+				dialog1.Destroy()
+			else:
+				self.path_to_detector=os.path.join(self.detector_path,detector)
+			with open(os.path.join(self.path_to_detector,'model_parameters.txt')) as f:
+				model_parameters=f.read()
+			cell_names=json.loads(model_parameters)['cell_names']
+			if len(cell_names)>1:
+				dialog1=wx.MultiChoiceDialog(self,message='Specify which cells involved in analysis',
+					caption='Cell kind',choices=cell_names)
+				if dialog1.ShowModal()==wx.ID_OK:
+					self.cell_kinds=[cell_names[i] for i in dialog1.GetSelections()]
+				else:
+					self.cell_kinds=cell_names
+				dialog1.Destroy()
+			else:
+				self.cell_kinds=cell_names
+			self.names_colors={}
+			self.detection_threshold={}
+			if len(self.cell_kinds)>1:
+				diff=int(255/len(self.cell_kinds))
+			else:
+				diff=0
+			for cell_name in self.cell_kinds:
+				dialog1=wx.NumberEntryDialog(self,'Detection threshold for '+str(cell_name),'Enter an number between 0 and 100','Detection threshold for '+str(cell_name),0,0,100)
+				if dialog1.ShowModal()==wx.ID_OK:
+					self.detection_threshold[cell_name]=int(dialog1.GetValue())/100
+				else:
+					self.detection_threshold[cell_name]=0
+				dialog1.Destroy()
+				self.names_colors[cell_name]=(255,255-diff,255)
+			self.text_detection.SetLabel('Detector: '+detector+'; '+'The cell kinds / detection threshold: '+str(self.detection_threshold)+'.')
+		dialog.Destroy()
+
+
+	def specify_fov(self,event):
+
+		dialog=wx.NumberEntryDialog(self,'Enter the number of sections\nthe width and height should be divided','Enter a number:','Number of field of view',1,1,10000)
+		if dialog.ShowModal()==wx.ID_OK:
+			self.fov_div=int(dialog.GetValue())
+		else:
+			self.fov_div=1
+		self.text_fov.SetLabel('The height and width of an image will be divided by : '+str(self.fov_div)+'.')
+		dialog.Destroy()
+
+
+	def specify_expansion(self,event):
+
+		dialog=wx.NumberEntryDialog(self,'Enter the expansion factor that enables\nthe Detector to detect expanded areas','Enter a number:','Expansion factor',1,1,100)
+		if dialog.ShowModal()==wx.ID_OK:
+			self.expansion=int(dialog.GetValue())
+		else:
+			self.expansion=1
+		self.text_expansion.SetLabel('The expansion factor is : '+str(self.expansion)+'.')
+		dialog.Destroy()
+
+
+	def specify_channels(self,event):
+
+		dialog=wx.NumberEntryDialog(self,'Channel for detection','Enter a number\n(the 1st channel is 0)','Channel for detection',0,0,10)
+		if dialog.ShowModal()==wx.ID_OK:
+			self.detection_channel=int(dialog.GetValue())
+		dialog.Destroy()
+
+		dialog=wx.TextEntryDialog(self,'Enter the channels for analysis\n(use "," to separate each channle)','Channels for analysis')
+		if dialog.ShowModal()==wx.ID_OK:
+			entry=dialog.GetValue()
+			try:
+				channels=entry.split(',')
+				for i in channels:
+					self.analysis_channels.append(int(i))
+			except:
+				wx.MessageBox('Please enter the number of channels for analysis in\ncorrect format! For example: 0,1,2','Error',wx.OK|wx.ICON_ERROR)
+		dialog.Destroy()
+
+		self.text_channels.SetLabel('Channel for detection: '+str(self.detection_channel)+'; Channels for analysis: '+str(self.analysis_channels))
+
+
+	def analyze_intensity(self,event):
+
+		if self.path_to_files is None or self.result_path is None or self.path_to_detector is None:
+
+			wx.MessageBox('No input file(s) / result folder / Detector.','Error',wx.OK|wx.ICON_ERROR)
+
+		else:
+
+			for i in self.path_to_files:
+				AC=AnalyzeCells(i,self.result_path,self.path_to_detector,self.cell_kinds,detection_threshold=self.detection_threshold,expansion=self.expansion,fov_div=self.fov_div)
+				AC.channels_intensity(self.names_colors,detection_channel=self.detection_channel,analysis_channels=self.analysis_channels)
+
+
+
+class WindowLv2_AnalyzeSingleChannel(wx.Frame):
+
+	def __init__(self,title):
+
+		super(WindowLv2_AnalyzeSingleChannel,self).__init__(parent=None,title=title,size=(1000,380))
 		self.detector_path=None
 		self.path_to_detector=None
 		self.cell_kinds=None
