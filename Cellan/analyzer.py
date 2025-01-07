@@ -70,6 +70,12 @@ class AnalyzeCells():
 		fov_width=int(width/self.fov_div)
 		fov_height=int(height/self.fov_div)
 
+		if self.imagewidth is not None:
+			calculate_width=self.imagewidth
+		else:
+			calculate_width=fov_width
+		thickness=max(1,round(calculate_width/960))
+
 		for w in range(self.fov_div):
 
 			for h in range(self.fov_div):
@@ -133,7 +139,7 @@ class AnalyzeCells():
 											area=cell_areas[cell_name][n]
 											if area>0:
 												cell_intensities[cell_name][c].append(np.sum(analysis_fov*goodmasks[n])/area)
-												cv2.drawContours(to_annotate,[cnt],0,names_colors[cell_name],1)
+												cv2.drawContours(to_annotate,[cnt],0,names_colors[cell_name],thickness)
 											else:
 												cell_intensities[cell_name][c].append(0)
 										cv2.imwrite(os.path.join(self.results_path,os.path.splitext(os.path.basename(self.path_to_file))[0]+'_'+str(w)+str(h)+'_c'+str(c)+'_annotated.jpg'),to_annotate)
@@ -177,6 +183,12 @@ class AnalyzeCells():
 		height=image.shape[0]
 		fov_width=int(width/self.fov_div)
 		fov_height=int(height/self.fov_div)
+
+		if self.imagewidth is not None:
+			calculate_width=self.imagewidth
+		else:
+			calculate_width=fov_width
+		thickness=max(1,round(calculate_width/960))
 
 		for w in range(self.fov_div):
 
@@ -232,7 +244,7 @@ class AnalyzeCells():
 										to_annotate=np.uint8(exposure.rescale_intensity(analysis_fov,out_range=(0,255)))
 										if area>0:
 											cell_intensities[cell_name].append(np.sum(analysis_fov*cv2.cvtColor(mask,cv2.COLOR_GRAY2BGR))/area)
-											cv2.drawContours(to_annotate,[cnt],0,names_colors[cell_name],1)
+											cv2.drawContours(to_annotate,[cnt],0,names_colors[cell_name],thickness)
 										else:
 											cell_intensities[cell_name].append(0)
 
