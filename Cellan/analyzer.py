@@ -22,10 +22,10 @@ class AnalyzeCells():
 		self.detection_threshold=detection_threshold
 		self.path_to_file=path_to_file
 		self.results_path=os.path.join(results_path,os.path.splitext(os.path.basename(self.path_to_file))[0])
-		if os.path.splitext(os.path.basename(self.path_to_file))[1] in ['.tif','.TIF','.tiff','.TIFF','.svs','.SVS']:
-			self.lif=False
-		else: 
+		if os.path.splitext(os.path.basename(self.path_to_file))[1] in ['.lif','.LIF']:
 			self.lif=True
+		else: 
+			self.lif=False
 		os.makedirs(self.results_path,exist_ok=True)
 		self.expansion=expansion
 		self.fov_div=fov_div
@@ -37,6 +37,18 @@ class AnalyzeCells():
 			self.detection_threshold={}
 			for cell_name in self.cell_kinds:
 				self.detection_threshold[cell_name]=0
+
+		if self.lif:
+			lifdata=LifFile(self.path_to_file)
+			file=[i for i in lifdata.get_iter_image()][0]
+			detect_image=np.array(file.get_frame(z=0,t=0,c=detection_channel))
+			if len(analysis_channels)==0:
+				c_list=[i for i in file.get_iter_c(t=0,z=0)]
+				analysis_channels=[c for c in range(c_list)]
+		else:
+			detect_image=imread(self.path_to_file)[:,:,detection_channel]
+			if len(analysis_channels)==0:
+				analysis_channels=[0,1,2]
 
 		cell_numbers={}
 		cell_centers={}
@@ -50,18 +62,6 @@ class AnalyzeCells():
 			cell_intensities[cell_name]={}
 			for c in analysis_channels:
 				cell_intensities[cell_name][c]=[]
-
-		if self.lif:
-			lifdata=LifFile(self.path_to_file)
-			file=[i for i in lifdata.get_iter_image()][0]
-			detect_image=np.array(file.get_frame(z=0,t=0,c=detection_channel))
-			if len(analysis_channels)==0:
-				c_list=[i for i in file.get_iter_c(t=0,z=0)]
-				analysis_channels=[c for c in range(c_list)]
-		else:
-			detect_image=imread(self.path_to_file)[:,:,detection_channel]
-			if len(analysis_channels)==0:
-				analysis_channels=[0,1,2]
 
 		detect_image=cv2.cvtColor(detect_image,cv2.COLOR_GRAY2BGR)
 		width=detect_image.shape[1]
@@ -148,7 +148,7 @@ class AnalyzeCells():
 		print('Analysis completed!')
 
 
-	def cells_arearatio(self,names_colors,detection_channel=0,analysis_channels=[]):
+	def analyze_singlechannel(self,names_colors):
 
 		if self.detection_threshold is None:
 			self.detection_threshold={}
@@ -164,25 +164,11 @@ class AnalyzeCells():
 			cell_numbers[cell_name]=0
 			cell_centers[cell_name]=[]
 			cell_areas[cell_name]=[]
-			cell_intensities[cell_name]={}
-			for c in analysis_channels:
-				cell_intensities[cell_name][c]=[]
+			cell_intensities[cell_name]=[]
 
-		if self.lif:
-			lifdata=LifFile(self.path_to_file)
-			file=[i for i in lifdata.get_iter_image()][0]
-			detect_image=np.array(file.get_frame(z=0,t=0,c=detection_channel))
-			if len(analysis_channels)==0:
-				c_list=[i for i in file.get_iter_c(t=0,z=0)]
-				analysis_channels=[c for c in range(c_list)]
-		else:
-			detect_image=imread(self.path_to_file)[:,:,detection_channel]
-			if len(analysis_channels)==0:
-				analysis_channels=[0,1,2]
-
-		detect_image=cv2.cvtColor(detect_image,cv2.COLOR_GRAY2BGR)
-		width=detect_image.shape[1]
-		height=detect_image.shape[0]
+		image=imread(self.path_to_file)
+		width=image.shape[1]
+		height=image.shape[0]
 		fov_width=int(width/self.fov_div)
 		fov_height=int(height/self.fov_div)
 
@@ -190,13 +176,9 @@ class AnalyzeCells():
 
 			for h in range(self.fov_div):
 
-				detect_fov=np.uint8(exposure.rescale_intensity(detect_image[h*fov_height:(h+1)*fov_height,w*fov_width:(w+1)*fov_width],out_range=(0,255)))
-				analysis_fovs={}
-				for c in analysis_channels:
-					if self.lif:
-						analysis_fovs[c]=np.array(file.get_frame(z=0,t=0,c=c))[h*fov_height:(h+1)*fov_height,w*fov_width:(w+1)*fov_width]
-					else:
-						analysis_fovs[c]=imread(self.path_to_file)[h*fov_height:(h+1)*fov_height,w*fov_width:(w+1)*fov_width,c]
+				analysis_fov=image[h*fov_height:(h+1)*fov_height,w*fov_width:(w+1)*fov_width]
+				detect_fov=np.uint8(exposure.rescale_intensity(analysis_fov,out_range=(0,255)))
+
 				output=self.detector.inference([{'image':torch.as_tensor(detect_fov.astype('float32').transpose(2,0,1))}])
 				instances=output[0]['instances'].to('cpu')
 				masks=instances.pred_masks.numpy().astype(np.uint8)
@@ -235,19 +217,16 @@ class AnalyzeCells():
 										cnt=sorted(cnts,key=cv2.contourArea,reverse=True)[0]
 										goodcontours.append(cnt)
 										cell_centers[cell_name].append((int(cv2.moments(cnt)['m10']/cv2.moments(cnt)['m00'])+int(w*fov_width),int(cv2.moments(cnt)['m01']/cv2.moments(cnt)['m00'])+int(h*fov_height)))
-										cell_areas[cell_name].append(np.sum(np.array(mask),axis=(0,1)))
-
-									for c in analysis_channels:
-										analysis_fov=analysis_fovs[c]
+										area=np.sum(np.array(mask),axis=(0,1))
+										cell_areas[cell_name].append(area)
 										to_annotate=np.uint8(exposure.rescale_intensity(analysis_fov,out_range=(0,255)))
-										for n,cnt in enumerate(goodcontours):
-											area=cell_areas[cell_name][n]
-											if area>0:
-												cell_intensities[cell_name][c].append(np.sum(analysis_fov*goodmasks[n])/area)
-												cv2.drawContours(to_annotate,[cnt],0,names_colors[cell_name],1)
-											else:
-												cell_intensities[cell_name][c].append(0)
-										cv2.imwrite(os.path.join(self.results_path,os.path.splitext(os.path.basename(self.path_to_file))[0]+'_'+str(w)+str(h)+'_c'+str(c)+'_annotated.jpg'),to_annotate)
+										if area>0:
+											cell_intensities[cell_name].append(np.sum(analysis_fov*mask)/area)
+											cv2.drawContours(to_annotate,[cnt],0,names_colors[cell_name],1)
+										else:
+											cell_intensities[cell_name].append(0)
+
+									cv2.imwrite(os.path.join(self.results_path,os.path.splitext(os.path.basename(self.path_to_file))[0]+'_'+str(w)+str(h)+'_c'+str(c)+'_annotated.jpg'),to_annotate)
 
 		for cell_name in self.cell_kinds:
 
@@ -256,9 +235,7 @@ class AnalyzeCells():
 			dfs.append(pd.DataFrame([i+1 for i in range(len(cell_centers[cell_name]))],columns=['number']).reset_index(drop=True))
 			dfs.append(pd.DataFrame(cell_centers[cell_name],columns=['center_x','center_y']).reset_index(drop=True))
 			dfs.append(pd.DataFrame(cell_areas[cell_name],columns=['areas']).reset_index(drop=True))
-			for c in analysis_channels:
-				dfs.append(pd.DataFrame(cell_intensities[cell_name][c],columns=['intensity_'+str(c)]).reset_index(drop=True))
-
+			dfs.append(pd.DataFrame(cell_intensities[cell_name],columns=['intensities']).reset_index(drop=True))
 			out_sheet=os.path.join(self.results_path,cell_name+'_summary.xlsx')
 			pd.concat(dfs,axis=1).to_excel(out_sheet,float_format='%.2f',index_label='ID/parameter')
 
