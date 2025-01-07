@@ -231,12 +231,12 @@ class AnalyzeCells():
 										cell_areas[cell_name].append(area)
 										to_annotate=np.uint8(exposure.rescale_intensity(analysis_fov,out_range=(0,255)))
 										if area>0:
-											cell_intensities[cell_name].append(np.sum(analysis_fov*mask)/area)
+											cell_intensities[cell_name].append(np.sum(analysis_fov*cv2.cvtColor(mask,cv2.COLOR_GRAY2BGR))/area)
 											cv2.drawContours(to_annotate,[cnt],0,names_colors[cell_name],1)
 										else:
 											cell_intensities[cell_name].append(0)
 
-									cv2.imwrite(os.path.join(self.results_path,os.path.splitext(os.path.basename(self.path_to_file))[0]+'_'+str(w)+str(h)+'_c'+str(c)+'_annotated.jpg'),to_annotate)
+									cv2.imwrite(os.path.join(self.results_path,os.path.splitext(os.path.basename(self.path_to_file))[0]+'_'+str(w)+str(h)+'_annotated.jpg'),to_annotate)
 
 		for cell_name in self.cell_kinds:
 
