@@ -13,7 +13,7 @@ from skimage import exposure
 
 class AnalyzeCells():
 
-	def __init__(self,path_to_file,results_path,path_to_detector,cell_kinds,detection_threshold=None,expansion=None,fov_div=1):
+	def __init__(self,path_to_file,results_path,path_to_detector,cell_kinds,detection_threshold=None,expansion=None,fov_div=1,imagewidth=None):
 
 		self.detector=Detector()
 		self.detector.load(path_to_detector,cell_kinds)
@@ -29,6 +29,7 @@ class AnalyzeCells():
 		os.makedirs(self.results_path,exist_ok=True)
 		self.expansion=expansion
 		self.fov_div=fov_div
+		self.imagewidth=imagewidth
 
 
 	def analyze_multichannels(self,names_colors,detection_channel=0,analysis_channels=[]):
@@ -74,12 +75,17 @@ class AnalyzeCells():
 			for h in range(self.fov_div):
 
 				detect_fov=np.uint8(exposure.rescale_intensity(detect_image[h*fov_height:(h+1)*fov_height,w*fov_width:(w+1)*fov_width],out_range=(0,255)))
+				if self.imagewidth is not None:
+					detect_fov=cv2.resize(detect_fov,(self.imagewidth,int(detect_fov.shape[0]*self.imagewidth/detect_fov.shape[1])),interpolation=cv2.INTER_AREA)
 				analysis_fovs={}
 				for c in analysis_channels:
 					if self.lif:
-						analysis_fovs[c]=np.array(file.get_frame(z=0,t=0,c=c))[h*fov_height:(h+1)*fov_height,w*fov_width:(w+1)*fov_width]
+						analysis_fov=np.array(file.get_frame(z=0,t=0,c=c))[h*fov_height:(h+1)*fov_height,w*fov_width:(w+1)*fov_width]
 					else:
-						analysis_fovs[c]=imread(self.path_to_file)[h*fov_height:(h+1)*fov_height,w*fov_width:(w+1)*fov_width,c]
+						analysis_fov=imread(self.path_to_file)[h*fov_height:(h+1)*fov_height,w*fov_width:(w+1)*fov_width,c]
+					if self.imagewidth is not None:
+						analysis_fov=cv2.resize(analysis_fov,(self.imagewidth,int(analysis_fov.shape[0]*self.imagewidth/analysis_fov.shape[1])),interpolation=cv2.INTER_AREA)
+					analysis_fovs[c]=analysis_fov
 				output=self.detector.inference([{'image':torch.as_tensor(detect_fov.astype('float32').transpose(2,0,1))}])
 				instances=output[0]['instances'].to('cpu')
 				masks=instances.pred_masks.numpy().astype(np.uint8)
@@ -178,6 +184,10 @@ class AnalyzeCells():
 
 				analysis_fov=image[h*fov_height:(h+1)*fov_height,w*fov_width:(w+1)*fov_width]
 				detect_fov=np.uint8(exposure.rescale_intensity(analysis_fov,out_range=(0,255)))
+
+				if self.imagewidth is not None:
+					analysis_fov=cv2.resize(analysis_fov,(self.imagewidth,int(analysis_fov.shape[0]*self.imagewidth/analysis_fov.shape[1])),interpolation=cv2.INTER_AREA)
+					detect_fov=cv2.resize(detect_fov,(self.imagewidth,int(detect_fov.shape[0]*self.imagewidth/detect_fov.shape[1])),interpolation=cv2.INTER_AREA)
 
 				output=self.detector.inference([{'image':torch.as_tensor(detect_fov.astype('float32').transpose(2,0,1))}])
 				instances=output[0]['instances'].to('cpu')
