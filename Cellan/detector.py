@@ -23,12 +23,13 @@ class Detector():
 		self.current_detector=None # the current Detector used for inference
 
 
-	def train(self,path_to_annotation,path_to_trainingimages,path_to_detector,iteration_num,inference_size):
+	def train(self,path_to_annotation,path_to_trainingimages,path_to_detector,iteration_num,inference_size,num_rois):
 
 		# path_to_annotation: the path to the .json file that stores the annotations in coco format
 		# path_to_trainingimages: the folder that stores all the training images
 		# iteration_num: the number of training iterations
 		# inference_size: the Detector inferencing frame size
+		# num_rois: the batch size of ROI heads per image
 
 		if str('Cellan_detector_train') in DatasetCatalog.list():
 			DatasetCatalog.remove('Cellan_detector_train')
@@ -59,7 +60,7 @@ class Detector():
 		cfg.DATASETS.TEST=()
 		cfg.DATALOADER.NUM_WORKERS=4
 		cfg.MODEL.WEIGHTS=model_zoo.get_checkpoint_url('COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml')
-		cfg.MODEL.ROI_HEADS.BATCH_SIZE_PER_IMAGE=512
+		cfg.MODEL.ROI_HEADS.BATCH_SIZE_PER_IMAGE=num_rois
 		cfg.MODEL.ROI_HEADS.NUM_CLASSES=int(len(classnames))
 		cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST=0.5
 		cfg.SOLVER.MAX_ITER=int(iteration_num)
