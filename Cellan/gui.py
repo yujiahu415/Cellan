@@ -304,6 +304,7 @@ class WindowLv2_TrainDetectors(wx.Frame):
 		super(WindowLv2_TrainDetectors,self).__init__(parent=None,title=title,size=(1000,280))
 		self.path_to_trainingimages=None
 		self.path_to_annotation=None
+		self.num_rois=128
 		self.inference_size=1280
 		self.iteration_num=5000
 		self.detector_path=os.path.join(the_absolute_current_path,'detectors')
@@ -422,8 +423,19 @@ class WindowLv2_TrainDetectors(wx.Frame):
 
 		else:
 
-			do_nothing=False
+			cell_numbers=['<50','50-200','>200']
+			dialog=wx.SingleChoiceDialog(self,message='How many (approximately) cells of interest per image?',caption='Number of cells',choices=cell_numbers)
+			if dialog.ShowModal()==wx.ID_OK:
+				cell_number=dialog.GetStringSelection()
+				if cell_number=='<50':
+					self.num_rois=128
+				elif cell_number=='50-200':
+					self.num_rois=256
+				else:
+					self.num_rois=512
+			dialog.Destroy()
 
+			do_nothing=False
 			stop=False
 			while stop is False:
 				dialog=wx.TextEntryDialog(self,'Enter a name for the Detector to train','Detector name')
@@ -440,9 +452,8 @@ class WindowLv2_TrainDetectors(wx.Frame):
 				dialog.Destroy()
 
 			if do_nothing is False:
-
 				DT=Detector()
-				DT.train(self.path_to_annotation,self.path_to_trainingimages,self.path_to_detector,self.iteration_num,self.inference_size)
+				DT.train(self.path_to_annotation,self.path_to_trainingimages,self.path_to_detector,self.iteration_num,self.inference_size,self.num_rois)
 
 
 
