@@ -1079,7 +1079,6 @@ class WindowLv2_AnalyzeSingleChannel(wx.Frame):
 				else:
 					self.detection_threshold[cell_name]=0
 				dialog1.Destroy()
-				self.names_colors[cell_name]=(255,255-diff,255)
 			self.text_detection.SetLabel('Detector: '+detector+'; '+'The cell kinds / detection threshold: '+str(self.detection_threshold)+'.')
 		dialog.Destroy()
 
