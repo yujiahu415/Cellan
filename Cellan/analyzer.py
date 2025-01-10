@@ -100,15 +100,19 @@ class AnalyzeCells():
 
 				if len(masks)>0:
 
-					mask_area=np.sum(np.array(masks),axis=(1,2))
-					exclusion_mask=np.zeros(len(masks),dtype=bool)
-					exclusion_mask[np.where((np.sum(np.logical_and(masks[:,None],masks),axis=(2,3))/mask_area[:,None]>0.8) & (mask_area[:,None]<mask_area[None,:]))[0]]=True
-					masks=[m for m,exclude in zip(masks,exclusion_mask) if not exclude]
-					classes=[c for c,exclude in zip(classes,exclusion_mask) if not exclude]
+					#mask_area=np.sum(np.array(masks),axis=(1,2))
+					#exclusion_mask=np.zeros(len(masks),dtype=bool)
+					#exclusion_mask[np.where((np.sum(np.logical_and(masks[:,None],masks),axis=(2,3))/mask_area[:,None]>0.8) & (mask_area[:,None]<mask_area[None,:]))[0]]=True
+					#masks=[m for m,exclude in zip(masks,exclusion_mask) if not exclude]
+					#classes=[c for c,exclude in zip(classes,exclusion_mask) if not exclude]
 					classes=[self.cell_mapping[str(x)] for x in classes]
-					scores=[s for s,exclude in zip(scores,exclusion_mask) if not exclude]
+					#scores=[s for s,exclude in zip(scores,exclusion_mask) if not exclude]
 
 					for cell_name in self.cell_kinds:
+
+						hex_color=names_colors[cell_name].lstrip('#')
+						color=tuple(int(hex_color[i:i+2],16) for i in (0,2,4))
+						color=color[::-1]
 
 						cell_masks=[masks[a] for a,name in enumerate(classes) if name==cell_name]
 						cell_scores=[scores[a] for a,name in enumerate(classes) if name==cell_name]
@@ -139,7 +143,7 @@ class AnalyzeCells():
 											area=cell_areas[cell_name][n]
 											if area>0:
 												cell_intensities[cell_name][c].append(np.sum(analysis_fov*goodmasks[n])/area)
-												cv2.drawContours(to_annotate,[cnt],0,names_colors[cell_name],thickness)
+												cv2.drawContours(to_annotate,[cnt],0,color,thickness)
 											else:
 												cell_intensities[cell_name][c].append(0)
 										cv2.imwrite(os.path.join(self.results_path,os.path.splitext(os.path.basename(self.path_to_file))[0]+'_'+str(w)+str(h)+'_c'+str(c)+'_annotated.jpg'),to_annotate)

@@ -3,6 +3,7 @@ import cv2
 import wx
 import wx.lib.agw.hyperlink as hl
 from pathlib import Path
+import matplotlib as mpl
 import json
 import shutil
 from .analyzer import AnalyzeCells
@@ -24,7 +25,7 @@ class ColorPicker(wx.Dialog):
 
 		self.name_and_color=name_and_color
 		name=self.name_and_color[0]
-		hex_color=self.name_and_color[1][1].lstrip('#')
+		hex_color=self.name_and_color[1].lstrip('#')
 		color=tuple(int(hex_color[i:i+2],16) for i in (0,2,4))
 
 		boxsizer=wx.BoxSizer(wx.VERTICAL)
@@ -781,23 +782,6 @@ class WindowLv2_AnalyzeMultiChannels(wx.Frame):
 		dialog.Destroy()
 
 
-
-
-	def select_colors(self,event):
-
-		if self.events_probability is None or self.names_and_colors is None:
-			wx.MessageBox('No all_events.xlsx file selected!','Error',wx.OK | wx.ICON_ERROR)
-		else:
-			for behavior in self.names_and_colors:
-				dialog=ColorPicker(self,f'Color for {behavior}',[behavior,self.names_and_colors[behavior]])
-				if dialog.ShowModal()==wx.ID_OK:
-					(r,b,g,_)=dialog.color_picker.GetColour()
-					new_color='#%02x%02x%02x'%(r,b,g)
-					self.names_and_colors[behavior]=('#ffffff',new_color)
-			self.text_selectcolors.SetLabel('Colors: '+', '.join([f'{behavior}:{color}' for behavior,(_,color) in self.names_and_colors.items()]))
-
-
-
 	def select_detector(self,event):
 
 		self.detector_path=os.path.join(the_absolute_current_path,'detectors')
@@ -845,7 +829,8 @@ class WindowLv2_AnalyzeMultiChannels(wx.Frame):
 				dialog1=ColorPicker(self,f'Color for annotating {cell_name}',[cell_name,self.names_colors[cell_name]])
 				if dialog1.ShowModal()==wx.ID_OK:
 					(r,b,g,_)=dialog1.color_picker.GetColour()
-					self.names_colors[cell_name]=(r,b,g)
+					new_color='#%02x%02x%02x'%(r,b,g)
+					self.names_colors[cell_name]=new_color
 				dialog1.Destroy()
 				dialog1=wx.NumberEntryDialog(self,'Detection threshold for '+str(cell_name),'Enter an number between 0 and 100','Detection threshold for '+str(cell_name),0,0,100)
 				if dialog1.ShowModal()==wx.ID_OK:
