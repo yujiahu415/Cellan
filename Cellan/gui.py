@@ -16,6 +16,32 @@ the_absolute_current_path=str(Path(__file__).resolve().parent)
 
 
 
+class ColorPicker(wx.Dialog):
+
+	def __init__(self,parent,title,name_and_color):
+
+		super(ColorPicker,self).__init__(parent=None,title=title,size=(200,200))
+
+		self.name_and_color=name_and_color
+		name=self.name_and_color[0]
+		hex_color=self.name_and_color[1][1].lstrip('#')
+		color=tuple(int(hex_color[i:i+2],16) for i in (0,2,4))
+
+		boxsizer=wx.BoxSizer(wx.VERTICAL)
+
+		self.color_picker=wx.ColourPickerCtrl(self,colour=color)
+
+		button=wx.Button(self,wx.ID_OK,label='Apply')
+
+		boxsizer.Add(0,10,0)
+		boxsizer.Add(self.color_picker,0,wx.ALL|wx.CENTER,10)
+		boxsizer.Add(button,0,wx.ALL|wx.CENTER,10)
+		boxsizer.Add(0,10,0)
+
+		self.SetSizer(boxsizer)
+
+
+
 class InitialWindow(wx.Frame):
 
 	def __init__(self,title):
@@ -755,6 +781,23 @@ class WindowLv2_AnalyzeMultiChannels(wx.Frame):
 		dialog.Destroy()
 
 
+
+
+	def select_colors(self,event):
+
+		if self.events_probability is None or self.names_and_colors is None:
+			wx.MessageBox('No all_events.xlsx file selected!','Error',wx.OK | wx.ICON_ERROR)
+		else:
+			for behavior in self.names_and_colors:
+				dialog=ColorPicker(self,f'Color for {behavior}',[behavior,self.names_and_colors[behavior]])
+				if dialog.ShowModal()==wx.ID_OK:
+					(r,b,g,_)=dialog.color_picker.GetColour()
+					new_color='#%02x%02x%02x'%(r,b,g)
+					self.names_and_colors[behavior]=('#ffffff',new_color)
+			self.text_selectcolors.SetLabel('Colors: '+', '.join([f'{behavior}:{color}' for behavior,(_,color) in self.names_and_colors.items()]))
+
+
+
 	def select_detector(self,event):
 
 		self.detector_path=os.path.join(the_absolute_current_path,'detectors')
@@ -795,18 +838,21 @@ class WindowLv2_AnalyzeMultiChannels(wx.Frame):
 				self.cell_kinds=cell_names
 			self.names_colors={}
 			self.detection_threshold={}
-			if len(self.cell_kinds)>1:
-				diff=int(255/len(self.cell_kinds))
-			else:
-				diff=0
+			colors=[str(hex_code) for hex_code in mpl.colors.cnames.values()]
+			for color,cell_name in zip(colors,self.cell_kinds):
+				self.names_colors[cell_name]=color
 			for cell_name in self.cell_kinds:
+				dialog1=ColorPicker(self,f'Color for annotating {cell_name}',[cell_name,self.names_colors[cell_name]])
+				if dialog1.ShowModal()==wx.ID_OK:
+					(r,b,g,_)=dialog1.color_picker.GetColour()
+					self.names_colors[cell_name]=(r,b,g)
+				dialog1.Destroy()
 				dialog1=wx.NumberEntryDialog(self,'Detection threshold for '+str(cell_name),'Enter an number between 0 and 100','Detection threshold for '+str(cell_name),0,0,100)
 				if dialog1.ShowModal()==wx.ID_OK:
 					self.detection_threshold[cell_name]=int(dialog1.GetValue())/100
 				else:
 					self.detection_threshold[cell_name]=0
 				dialog1.Destroy()
-				self.names_colors[cell_name]=(255,255-diff,255)
 			self.text_detection.SetLabel('Detector: '+detector+'; '+'The cell kinds / detection threshold: '+str(self.detection_threshold)+'.')
 		dialog.Destroy()
 
