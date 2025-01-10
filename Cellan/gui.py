@@ -1063,11 +1063,16 @@ class WindowLv2_AnalyzeSingleChannel(wx.Frame):
 				self.cell_kinds=cell_names
 			self.names_colors={}
 			self.detection_threshold={}
-			if len(self.cell_kinds)>1:
-				diff=int(255/len(self.cell_kinds))
-			else:
-				diff=0
+			colors=[str(hex_code) for hex_code in mpl.colors.cnames.values()]
+			for color,cell_name in zip(colors,self.cell_kinds):
+				self.names_colors[cell_name]=color
 			for cell_name in self.cell_kinds:
+				dialog1=ColorPicker(self,f'Color for annotating {cell_name}',[cell_name,self.names_colors[cell_name]])
+				if dialog1.ShowModal()==wx.ID_OK:
+					(r,b,g,_)=dialog1.color_picker.GetColour()
+					new_color='#%02x%02x%02x'%(r,b,g)
+					self.names_colors[cell_name]=new_color
+				dialog1.Destroy()
 				dialog1=wx.NumberEntryDialog(self,'Detection threshold for '+str(cell_name),'Enter an number between 0 and 100','Detection threshold for '+str(cell_name),0,0,100)
 				if dialog1.ShowModal()==wx.ID_OK:
 					self.detection_threshold[cell_name]=int(dialog1.GetValue())/100
