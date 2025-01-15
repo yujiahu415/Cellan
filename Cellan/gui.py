@@ -689,9 +689,9 @@ class WindowLv2_AnalyzeMultiChannels(wx.Frame):
 		boxsizer=wx.BoxSizer(wx.VERTICAL)
 
 		module_inputfiles=wx.BoxSizer(wx.HORIZONTAL)
-		button_inputfiles=wx.Button(panel,label='Select the LIF/TIF file(s)\nfor analyzing cells',size=(300,40))
+		button_inputfiles=wx.Button(panel,label='Select the LIF/TIF/QPTIFF file(s)\nfor analyzing cells',size=(300,40))
 		button_inputfiles.Bind(wx.EVT_BUTTON,self.select_files)
-		wx.Button.SetToolTip(button_inputfiles,'Select one or more *.LIF or *.TIF file(s).')
+		wx.Button.SetToolTip(button_inputfiles,'Select one or more *.LIF or *.TIF or *.QPTIFF file(s).')
 		self.text_inputfiles=wx.StaticText(panel,label='None.',style=wx.ALIGN_LEFT|wx.ST_ELLIPSIZE_END)
 		module_inputfiles.Add(button_inputfiles,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
 		module_inputfiles.Add(self.text_inputfiles,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
@@ -764,8 +764,8 @@ class WindowLv2_AnalyzeMultiChannels(wx.Frame):
 
 	def select_files(self,event):
 
-		wildcard='LIF/TIF files (*.lif/*.tif)|*.lif;*.LIF;*.tif;*.TIF;*.tiff;*.TIFF'
-		dialog=wx.FileDialog(self,'Select LIF/TIF file(s)','','',wildcard,style=wx.FD_MULTIPLE)
+		wildcard='LIF/TIF/QPTIFF files (*.lif/*.tif/*.qptiff)|*.lif;*.LIF;*.tif;*.TIF;*.tiff;*.TIFF;*.qptiff;*.QPTIFF'
+		dialog=wx.FileDialog(self,'Select LIF/TIF/QPTIFF file(s)','','',wildcard,style=wx.FD_MULTIPLE)
 		if dialog.ShowModal()==wx.ID_OK:
 			self.path_to_files=dialog.GetPaths()
 			path=os.path.dirname(self.path_to_files[0])
