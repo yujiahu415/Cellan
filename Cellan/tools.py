@@ -69,7 +69,7 @@ def extract_images(path_to_file,out_folder,fov_div,imagewidth=None):
 
 					fov=np.uint8(exposure.rescale_intensity(image[c,h*fov_height:(h+1)*fov_height,w*fov_width:(w+1)*fov_width],out_range=(0,255)))
 					if imagewidth is not None:
-						fov=cv2.resize(fov,(imagewidth,int(fov.shape[1]*imagewidth/fov.shape[2])),interpolation=cv2.INTER_AREA)
+						fov=cv2.resize(fov,(imagewidth,int(fov.shape[0]*imagewidth/fov.shape[1])),interpolation=cv2.INTER_AREA)
 					imwrite(os.path.join(out_folder,os.path.splitext(os.path.basename(path_to_file))[0]+'_'+str(w)+str(h)+'_c'+str(c)+'.png'),fov)
 
 	else:
