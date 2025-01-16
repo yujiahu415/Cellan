@@ -47,14 +47,14 @@ class AnalyzeCells():
 				c_list=[i for i in file.get_iter_c(t=0,z=0)]
 				analysis_channels=[c for c in range(c_list)]
 		else:
-			if os.path.splitext(os.path.basename(self.path_to_file))[1] in ['.lif','.LIF']: 
+			if os.path.splitext(os.path.basename(self.path_to_file))[1] in ['.qptiff','.QPTIFF']:
+				detect_image=imread(self.path_to_file)[detection_channel,:,:]
+				if len(analysis_channels)==0:
+					analysis_channels=[i for i in range(imread(self.path_to_file).shape[0])]
+			else:
 				detect_image=imread(self.path_to_file)[:,:,detection_channel]
 				if len(analysis_channels)==0:
 					analysis_channels=[0,1,2]
-			else:
-				detect_image=imread(self.path_to_file)[detection_channel,:,:]
-				if len(analysis_channels)==0:
-					analysis_channels=list(range(imread(self.path_to_file).shape[0]))
 
 		cell_numbers={}
 		cell_centers={}
@@ -69,7 +69,7 @@ class AnalyzeCells():
 			for c in analysis_channels:
 				cell_intensities[cell_name][c]=[]
 
-		detect_image=cv2.cvtColor(detect_image,cv2.COLOR_GRAY2BGR)
+		detect_image=cv2.cvtColor(np.uint8(detect_image),cv2.COLOR_GRAY2BGR)
 		width=detect_image.shape[1]
 		height=detect_image.shape[0]
 		fov_width=int(width/self.fov_div)
@@ -93,7 +93,10 @@ class AnalyzeCells():
 					if self.lif:
 						analysis_fov=np.array(file.get_frame(z=0,t=0,c=c))[h*fov_height:(h+1)*fov_height,w*fov_width:(w+1)*fov_width]
 					else:
-						analysis_fov=imread(self.path_to_file)[h*fov_height:(h+1)*fov_height,w*fov_width:(w+1)*fov_width,c]
+						if os.path.splitext(os.path.basename(self.path_to_file))[1] in ['.qptiff','.QPTIFF']:
+							analysis_fov=imread(self.path_to_file)[c,h*fov_height:(h+1)*fov_height,w*fov_width:(w+1)*fov_width]
+						else:
+							analysis_fov=imread(self.path_to_file)[h*fov_height:(h+1)*fov_height,w*fov_width:(w+1)*fov_width,c]
 					if self.imagewidth is not None:
 						analysis_fov=cv2.resize(analysis_fov,(self.imagewidth,int(analysis_fov.shape[0]*self.imagewidth/analysis_fov.shape[1])),interpolation=cv2.INTER_AREA)
 					analysis_fovs[c]=analysis_fov
