@@ -47,9 +47,14 @@ class AnalyzeCells():
 				c_list=[i for i in file.get_iter_c(t=0,z=0)]
 				analysis_channels=[c for c in range(c_list)]
 		else:
-			detect_image=imread(self.path_to_file)[:,:,detection_channel]
-			if len(analysis_channels)==0:
-				analysis_channels=[0,1,2]
+			if os.path.splitext(os.path.basename(self.path_to_file))[1] in ['.lif','.LIF']: 
+				detect_image=imread(self.path_to_file)[:,:,detection_channel]
+				if len(analysis_channels)==0:
+					analysis_channels=[0,1,2]
+			else:
+				detect_image=imread(self.path_to_file)[detection_channel,:,:]
+				if len(analysis_channels)==0:
+					analysis_channels=list(range(imread(self.path_to_file).shape[0]))
 
 		cell_numbers={}
 		cell_centers={}
