@@ -1,6 +1,5 @@
 from readlif.reader import LifFile
-from tifffile import imread
-from tifffile import imwrite
+from tifffile import imread,imwrite
 import os
 import numpy as np
 import cv2
