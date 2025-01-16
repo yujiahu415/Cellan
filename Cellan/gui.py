@@ -228,7 +228,7 @@ class WindowLv2_GenerateImages(wx.Frame):
 		boxsizer=wx.BoxSizer(wx.VERTICAL)
 
 		module_inputfiles=wx.BoxSizer(wx.HORIZONTAL)
-		button_inputfiles=wx.Button(panel,label='Select the LIF/TIF/SVS/QPTIFF file(s) to generate\nimage examples',size=(300,40))
+		button_inputfiles=wx.Button(panel,label='Select the LIF/TIF/SVS/QPTIFF file(s)\nto generate image examples',size=(300,40))
 		button_inputfiles.Bind(wx.EVT_BUTTON,self.select_files)
 		wx.Button.SetToolTip(button_inputfiles,'Select one or more *.LIF or *.TIF or *.SVS or *.QPTIFF files.')
 		self.text_inputfiles=wx.StaticText(panel,label='None.',style=wx.ALIGN_LEFT|wx.ST_ELLIPSIZE_END)
