@@ -96,4 +96,3 @@ def extract_images(path_to_file,out_folder,fov_div,imagewidth=None):
 					cv2.imwrite(os.path.join(out_folder,os.path.splitext(os.path.basename(path_to_file))[0]+'_'+str(w)+str(h)+'_c'+str(c)+'.png'),fov)
 
 
-
