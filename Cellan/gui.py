@@ -80,7 +80,7 @@ class InitialWindow(wx.Frame):
 		wx.Button.SetToolTip(button_train,'Teach Cellan to recognize the cells of your interest.')
 		button_analyze=wx.Button(panel,label='Analysis Module',size=(200,40))
 		button_analyze.Bind(wx.EVT_BUTTON,self.window_analyze)
-		wx.Button.SetToolTip(button_analyze,'Use Cellan to analyze cells.')
+		wx.Button.SetToolTip(button_analyze,'Use Cellan to analyze cells in images.')
 		module_modules.Add(button_train,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
 		module_modules.Add(button_analyze,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
 		boxsizer.Add(module_modules,0,wx.ALIGN_CENTER,50)
