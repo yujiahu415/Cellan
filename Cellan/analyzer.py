@@ -257,7 +257,7 @@ class AnalyzeCells():
 										cell_centers[cell_name].append((int(cv2.moments(cnt)['m10']/cv2.moments(cnt)['m00'])+int(w*fov_width),int(cv2.moments(cnt)['m01']/cv2.moments(cnt)['m00'])+int(h*fov_height)))
 										area=np.sum(np.array(mask),axis=(0,1))
 										cell_areas[cell_name].append(area)
-										to_annotate=cv2.cvtColor(np.uint8(exposure.rescale_intensity(analysis_fov,out_range=(0,255))),cv2.COLOR_GRAY2BGR)
+										to_annotate=np.uint8(exposure.rescale_intensity(analysis_fov,out_range=(0,255)))
 										if area>0:
 											cell_intensities[cell_name].append(np.sum(analysis_fov*cv2.cvtColor(mask,cv2.COLOR_GRAY2BGR))/area)
 											cv2.drawContours(to_annotate,[cnt],0,color,thickness)
