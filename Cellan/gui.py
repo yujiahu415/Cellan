@@ -216,8 +216,9 @@ class WindowLv2_GenerateImages(wx.Frame):
 		super(WindowLv2_GenerateImages,self).__init__(parent=None,title=title,size=(1000,240))
 		self.path_to_files=None
 		self.result_path=None
-		self.fov_div=1
+		self.fov_dim=1280
 		self.imagewidth=None
+		self.black_background=True
 
 		self.dispaly_window()
 
@@ -249,10 +250,10 @@ class WindowLv2_GenerateImages(wx.Frame):
 		boxsizer.Add(0,5,0)
 
 		module_fov=wx.BoxSizer(wx.HORIZONTAL)
-		button_fov=wx.Button(panel,label='Specify the field of view\nin an image',size=(300,40))
+		button_fov=wx.Button(panel,label='Specify the dimension of one\nfield of view in an image',size=(300,40))
 		button_fov.Bind(wx.EVT_BUTTON,self.specify_fov)
-		wx.Button.SetToolTip(button_fov,'Specify the number (n) of field of view for height/width, the image will be divided into smaller field of view with the dimension of (height/n) X (width/n).')
-		self.text_fov=wx.StaticText(panel,label='Default: 1',style=wx.ALIGN_LEFT|wx.ST_ELLIPSIZE_END)
+		wx.Button.SetToolTip(button_fov,'Specify the width of one field of view (square shape), the image will be divided into smaller field of view with the specified dimension.')
+		self.text_fov=wx.StaticText(panel,label='Default: 1280',style=wx.ALIGN_LEFT|wx.ST_ELLIPSIZE_END)
 		module_fov.Add(button_fov,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
 		module_fov.Add(self.text_fov,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
 		boxsizer.Add(module_fov,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
@@ -295,28 +296,28 @@ class WindowLv2_GenerateImages(wx.Frame):
 
 	def specify_fov(self,event):
 
-		dialog=wx.NumberEntryDialog(self,'Enter the number of sections\nthe width and height should be divided','Enter a number:','Number of field of view',1,1,10000)
+		dialog=wx.NumberEntryDialog(self,'Enter the number of sections\nthe width and height should be divided','Enter a number:','Number of field of view',1280,1,2048)
 		if dialog.ShowModal()==wx.ID_OK:
-			self.fov_div=int(dialog.GetValue())
+			self.fov_dim=int(dialog.GetValue())
 		else:
-			self.fov_div=1
+			self.fov_dim=1280
 		dialog.Destroy()
 
-		dialog=wx.MessageDialog(self,'Proportional resize the field of views? Downsizing may make the analysis more efficient.','(Optional) resize the filed of views?',wx.YES_NO|wx.ICON_QUESTION)
+		dialog=wx.MessageDialog(self,'Is the background in the images black/darker?','Darker background?',wx.YES_NO|wx.ICON_QUESTION)
 		if dialog.ShowModal()==wx.ID_YES:
-			dialog1=wx.NumberEntryDialog(self,'Enter the desired image width','The unit is pixel:','Desired image width',1280,1,10000)
+			dialog1=wx.NumberEntryDialog(self,'Enter the desired image width','The unit is pixel:','Desired image width',640,1,2048)
 			if dialog1.ShowModal()==wx.ID_OK:
 				self.imagewidth=int(dialog1.GetValue())
 				if self.imagewidth<128:
 					self.imagewidth=128
-				self.text_fov.SetLabel('The height and width of an image will be divided by : '+str(self.fov_div)+' (resize fov width to '+str(self.imagewidth)+').')
+				self.text_fov.SetLabel('The dimension of one field of view is : '+str(self.fov_dim)' X '+str(self.fov_dim)+' (resize to '+str(self.imagewidth)+').')
 			else:
 				self.imagewidth=None
-				self.text_fov.SetLabel('The height and width of an image will be divided by : '+str(self.fov_div)+' (No resizing of fov).')
+				self.text_fov.SetLabel('The height and width of an image will be divided by : '+str(self.fov_dim)+' (No resizing of fov).')
 			dialog1.Destroy()
 		else:
 			self.imagewidth=None
-			self.text_fov.SetLabel('The height and width of an image will be divided by : '+str(self.fov_div)+' (No resizing of fov).')
+			self.text_fov.SetLabel('The height and width of an image will be divided by : '+str(self.fov_dim)+' (No resizing of fov).')
 		dialog.Destroy()
 
 
@@ -330,7 +331,7 @@ class WindowLv2_GenerateImages(wx.Frame):
 
 			print('Generating image examples...')
 			for i in self.path_to_files:
-				extract_images(i,self.result_path,self.fov_div,imagewidth=self.imagewidth)
+				extract_images(i,self.result_path,self.fov_dim,imagewidth=self.imagewidth,black_background=self.black_background)
 			print('Image example generation completed!')
 
 
@@ -674,7 +675,7 @@ class WindowLv2_AnalyzeMultiChannels(wx.Frame):
 		self.result_path=None
 		self.detection_threshold=None
 		self.expansion=None
-		self.fov_div=1
+		self.fov_dim=1
 		self.names_colors=None
 		self.detection_channel=0
 		self.analysis_channels=[]
@@ -846,9 +847,9 @@ class WindowLv2_AnalyzeMultiChannels(wx.Frame):
 
 		dialog=wx.NumberEntryDialog(self,'Enter the number of sections\nthe width and height should be divided','Enter a number:','Number of field of view',1,1,10000)
 		if dialog.ShowModal()==wx.ID_OK:
-			self.fov_div=int(dialog.GetValue())
+			self.fov_dim=int(dialog.GetValue())
 		else:
-			self.fov_div=1
+			self.fov_dim=1
 		dialog.Destroy()
 
 		dialog=wx.MessageDialog(self,'Proportional resize the field of views? Downsizing may make the analysis more efficient.','(Optional) resize the filed of views?',wx.YES_NO|wx.ICON_QUESTION)
@@ -858,14 +859,14 @@ class WindowLv2_AnalyzeMultiChannels(wx.Frame):
 				self.imagewidth=int(dialog1.GetValue())
 				if self.imagewidth<128:
 					self.imagewidth=128
-				self.text_fov.SetLabel('The height and width of an image will be divided by : '+str(self.fov_div)+' (resize fov width to '+str(self.imagewidth)+').')
+				self.text_fov.SetLabel('The height and width of an image will be divided by : '+str(self.fov_dim)+' (resize fov width to '+str(self.imagewidth)+').')
 			else:
 				self.imagewidth=None
-				self.text_fov.SetLabel('The height and width of an image will be divided by : '+str(self.fov_div)+' (No resizing of fov).')
+				self.text_fov.SetLabel('The height and width of an image will be divided by : '+str(self.fov_dim)+' (No resizing of fov).')
 			dialog1.Destroy()
 		else:
 			self.imagewidth=None
-			self.text_fov.SetLabel('The height and width of an image will be divided by : '+str(self.fov_div)+' (No resizing of fov).')
+			self.text_fov.SetLabel('The height and width of an image will be divided by : '+str(self.fov_dim)+' (No resizing of fov).')
 		dialog.Destroy()
 
 
@@ -911,7 +912,7 @@ class WindowLv2_AnalyzeMultiChannels(wx.Frame):
 		else:
 
 			for i in self.path_to_files:
-				AC=AnalyzeCells(i,self.result_path,self.path_to_detector,self.cell_kinds,detection_threshold=self.detection_threshold,expansion=self.expansion,fov_div=self.fov_div,imagewidth=self.imagewidth)
+				AC=AnalyzeCells(i,self.result_path,self.path_to_detector,self.cell_kinds,detection_threshold=self.detection_threshold,expansion=self.expansion,fov_dim=self.fov_dim,imagewidth=self.imagewidth)
 				AC.analyze_multichannels(self.names_colors,detection_channel=self.detection_channel,analysis_channels=self.analysis_channels)
 
 
@@ -928,7 +929,7 @@ class WindowLv2_AnalyzeSingleChannel(wx.Frame):
 		self.result_path=None
 		self.detection_threshold=None
 		self.expansion=None
-		self.fov_div=1
+		self.fov_dim=1
 		self.names_colors=None
 		self.imagewidth=None
 		
@@ -1088,9 +1089,9 @@ class WindowLv2_AnalyzeSingleChannel(wx.Frame):
 
 		dialog=wx.NumberEntryDialog(self,'Enter the number of sections\nthe width and height should be divided','Enter a number:','Number of field of view',1,1,10000)
 		if dialog.ShowModal()==wx.ID_OK:
-			self.fov_div=int(dialog.GetValue())
+			self.fov_dim=int(dialog.GetValue())
 		else:
-			self.fov_div=1
+			self.fov_dim=1
 		dialog.Destroy()
 
 		dialog=wx.MessageDialog(self,'Proportional resize the field of views? Downsizing may make the analysis more efficient.','(Optional) resize the filed of views?',wx.YES_NO|wx.ICON_QUESTION)
@@ -1100,14 +1101,14 @@ class WindowLv2_AnalyzeSingleChannel(wx.Frame):
 				self.imagewidth=int(dialog1.GetValue())
 				if self.imagewidth<128:
 					self.imagewidth=128
-				self.text_fov.SetLabel('The height and width of an image will be divided by : '+str(self.fov_div)+' (resize fov width to '+str(self.imagewidth)+').')
+				self.text_fov.SetLabel('The height and width of an image will be divided by : '+str(self.fov_dim)+' (resize fov width to '+str(self.imagewidth)+').')
 			else:
 				self.imagewidth=None
-				self.text_fov.SetLabel('The height and width of an image will be divided by : '+str(self.fov_div)+' (No resizing of fov).')
+				self.text_fov.SetLabel('The height and width of an image will be divided by : '+str(self.fov_dim)+' (No resizing of fov).')
 			dialog1.Destroy()
 		else:
 			self.imagewidth=None
-			self.text_fov.SetLabel('The height and width of an image will be divided by : '+str(self.fov_div)+' (No resizing of fov).')
+			self.text_fov.SetLabel('The height and width of an image will be divided by : '+str(self.fov_dim)+' (No resizing of fov).')
 		dialog.Destroy()
 
 
@@ -1131,7 +1132,7 @@ class WindowLv2_AnalyzeSingleChannel(wx.Frame):
 		else:
 
 			for i in self.path_to_files:
-				AC=AnalyzeCells(i,self.result_path,self.path_to_detector,self.cell_kinds,detection_threshold=self.detection_threshold,expansion=self.expansion,fov_div=self.fov_div,imagewidth=self.imagewidth)
+				AC=AnalyzeCells(i,self.result_path,self.path_to_detector,self.cell_kinds,detection_threshold=self.detection_threshold,expansion=self.expansion,fov_dim=self.fov_dim,imagewidth=self.imagewidth)
 				AC.analyze_singlechannel(self.names_colors)
 
 
