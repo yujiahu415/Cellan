@@ -7,7 +7,7 @@ from skimage import exposure
 
 
 
-def extract_images(path_to_file,out_folder,fov_dim,imagewidth=None):
+def extract_images(path_to_file,out_folder,fov_dim,imagewidth=None,black_background=True):
 
 	if os.path.splitext(os.path.basename(path_to_file))[1] in ['.svs','.SVS']:
 
@@ -17,6 +17,14 @@ def extract_images(path_to_file,out_folder,fov_dim,imagewidth=None):
 		remain_w=int(image.shape[1]%fov_dim)
 		num_h=int(image.shape[0]/fov_dim)
 		remain_h=int(image.shape[0]%fov_dim)
+
+		for h in range(num_h):
+
+			for w in range(num_w):
+
+				if w<num_w-1:
+					fov=np.uint8(exposure.rescale_intensity(image[int(h*fov_dim):int((h+1)*fov_dim),w*fov_width:(w+1)*fov_width],out_range=(0,255)))
+				else:
 
 		for w in range(fov_dim):
 
