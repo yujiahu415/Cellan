@@ -13,27 +13,25 @@ def extract_images(path_to_file,out_folder,fov_dim,imagewidth=None,black_backgro
 
 		image=imread(path_to_file)
 
-		num_w=int(image.shape[1]/fov_dim)
-		remain_w=int(image.shape[1]%fov_dim)
-		num_h=int(image.shape[0]/fov_dim)
-		remain_h=int(image.shape[0]%fov_dim)
+		width=image.shape[1]
+		height=image.shape[0]
+		num_w=int(width/fov_dim)
+		num_h=int(height/fov_dim)
+		if black_background:
+			background=np.zeros((fov_dim,fov_dim,3),dtype='uint8')
+		else:
+			background=np.uint8(np.ones((fov_dim,fov_dim,3))*255)
 
 		for h in range(num_h):
 
 			for w in range(num_w):
 
-				if w<num_w-1:
-					if h<num_h-1:
-						fov=np.uint8(exposure.rescale_intensity(image[int(h*fov_dim):int((h+1)*fov_dim),int(w*fov_dim):int((w+1)*fov_dim)],out_range=(0,255)))
-				else:
-
-		for w in range(fov_dim):
-
-			for h in range(fov_dim):
-
-				fov=np.uint8(exposure.rescale_intensity(image[h*fov_height:(h+1)*fov_height,w*fov_width:(w+1)*fov_width],out_range=(0,255)))
+				fov=np.uint8(exposure.rescale_intensity(image[int(h*fov_dim):min(int((h+1)*fov_dim),height)+1,int(w*fov_dim):min(int((w+1)*fov_dim),width)+1],out_range=(0,255)))
+				if fov.shape[0]<fov_dim or fov.shape[1]<fov_dim:
+					background[fov]=fov
+					fov=background
 				if imagewidth is not None:
-					fov=cv2.resize(fov,(imagewidth,int(fov.shape[0]*imagewidth/fov.shape[1])),interpolation=cv2.INTER_AREA)
+					fov=cv2.resize(fov,(imagewidth,imagewidth),interpolation=cv2.INTER_AREA)
 				cv2.imwrite(os.path.join(out_folder,os.path.splitext(os.path.basename(path_to_file))[0]+'_'+str(w)+str(h)+'.png'),fov)
 
 	elif os.path.splitext(os.path.basename(path_to_file))[1] in ['.tif','.TIF','.tiff','.TIFF']:
