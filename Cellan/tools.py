@@ -23,7 +23,8 @@ def extract_images(path_to_file,out_folder,fov_dim,imagewidth=None,black_backgro
 			for w in range(num_w):
 
 				if w<num_w-1:
-					fov=np.uint8(exposure.rescale_intensity(image[int(h*fov_dim):int((h+1)*fov_dim),w*fov_width:(w+1)*fov_width],out_range=(0,255)))
+					if h<num_h-1:
+						fov=np.uint8(exposure.rescale_intensity(image[int(h*fov_dim):int((h+1)*fov_dim),int(w*fov_dim):int((w+1)*fov_dim)],out_range=(0,255)))
 				else:
 
 		for w in range(fov_dim):
