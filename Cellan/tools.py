@@ -7,18 +7,20 @@ from skimage import exposure
 
 
 
-def extract_images(path_to_file,out_folder,fov_div,imagewidth=None):
+def extract_images(path_to_file,out_folder,fov_dim,imagewidth=None):
 
 	if os.path.splitext(os.path.basename(path_to_file))[1] in ['.svs','.SVS']:
 
 		image=imread(path_to_file)
 
-		fov_width=int(image.shape[1]/fov_div)
-		fov_height=int(image.shape[0]/fov_div)
+		num_w=int(image.shape[1]/fov_dim)
+		remain_w=int(image.shape[1]%fov_dim)
+		num_h=int(image.shape[0]/fov_dim)
+		remain_h=int(image.shape[0]%fov_dim)
 
-		for w in range(fov_div):
+		for w in range(fov_dim):
 
-			for h in range(fov_div):
+			for h in range(fov_dim):
 
 				fov=np.uint8(exposure.rescale_intensity(image[h*fov_height:(h+1)*fov_height,w*fov_width:(w+1)*fov_width],out_range=(0,255)))
 				if imagewidth is not None:
@@ -29,17 +31,17 @@ def extract_images(path_to_file,out_folder,fov_div,imagewidth=None):
 
 		image=imread(path_to_file)
 
-		fov_width=int(image.shape[1]/fov_div)
-		fov_height=int(image.shape[0]/fov_div)
+		fov_width=int(image.shape[1]/fov_dim)
+		fov_height=int(image.shape[0]/fov_dim)
 
 		if len(list(image.shape))<3:
 			c_list=None
 		else:
 			c_list=[0,1,2]
 
-		for w in range(fov_div):
+		for w in range(fov_dim):
 
-			for h in range(fov_div):
+			for h in range(fov_dim):
 
 				if c_list is None:
 					fov=np.uint8(exposure.rescale_intensity(image[h*fov_height:(h+1)*fov_height,w*fov_width:(w+1)*fov_width],out_range=(0,255)))
@@ -58,14 +60,14 @@ def extract_images(path_to_file,out_folder,fov_div,imagewidth=None):
 		image=imread(path_to_file)
 
 		c_list=[i for i in range(image.shape[0])]
-		fov_width=int(image.shape[2]/fov_div)
-		fov_height=int(image.shape[1]/fov_div)
+		fov_width=int(image.shape[2]/fov_dim)
+		fov_height=int(image.shape[1]/fov_dim)
 
 		for c in c_list:
 
-			for w in range(fov_div):
+			for w in range(fov_dim):
 
-				for h in range(fov_div):
+				for h in range(fov_dim):
 
 					fov=np.uint8(exposure.rescale_intensity(image[c,h*fov_height:(h+1)*fov_height,w*fov_width:(w+1)*fov_width],out_range=(0,255)))
 					if imagewidth is not None:
@@ -80,12 +82,12 @@ def extract_images(path_to_file,out_folder,fov_div,imagewidth=None):
 		c_list=[i for i in file.get_iter_c(t=0,z=0)]
 
 		image=np.array(file.get_frame(z=0,t=0,c=0))
-		fov_width=int(image.shape[1]/fov_div)
-		fov_height=int(image.shape[0]/fov_div)
+		fov_width=int(image.shape[1]/fov_dim)
+		fov_height=int(image.shape[0]/fov_dim)
 
-		for w in range(fov_div):
+		for w in range(fov_dim):
 
-			for h in range(fov_div):
+			for h in range(fov_dim):
 
 				for c in range(len(c_list)):
 
