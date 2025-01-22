@@ -888,6 +888,7 @@ class WindowLv2_AnalyzeMultiChannels(wx.Frame):
 		dialog.Destroy()
 
 		dialog=wx.TextEntryDialog(self,'Enter the channels for analysis\n(use "," to separate each channle)','Channels for analysis')
+		self.analysis_channels=[]
 		if dialog.ShowModal()==wx.ID_OK:
 			entry=dialog.GetValue()
 			try:
