@@ -13,7 +13,7 @@ from skimage import exposure
 
 class AnalyzeCells():
 
-	def __init__(self,path_to_file,results_path,path_to_detector,cell_kinds,detection_threshold=None,expansion=None,fov_dim=1280,black_background=True):
+	def __init__(self,path_to_file,results_path,path_to_detector,cell_kinds,detection_threshold=None,expansion=None):
 
 		self.detector=Detector()
 		self.detector.load(path_to_detector,cell_kinds)
@@ -28,8 +28,8 @@ class AnalyzeCells():
 			self.lif=False
 		os.makedirs(self.results_path,exist_ok=True)
 		self.expansion=expansion
-		self.fov_dim=fov_dim
-		self.black_background=black_background
+		self.fov_dim=self.detector.inferencing_framesize
+		self.black_background=self.detector.black_background
 
 
 	def analyze_multichannels(self,names_colors,detection_channel=0,analysis_channels=[]):
