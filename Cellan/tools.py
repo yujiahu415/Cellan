@@ -20,13 +20,13 @@ def extract_images(path_to_file,out_folder,fov_dim,black_background=True):
 		if black_background:
 			background=np.zeros((fov_dim,fov_dim,3),dtype='uint8')
 		else:
-			background=np.uint8(np.ones((fov_dim,fov_dim,3))*255)
+			background=np.uint8(np.ones((fov_dim,fov_dim,3),dtype='uint8')*255)
 
-		for h in range(num_h):
+		for h in range(num_h+1):
 
-			for w in range(num_w):
+			for w in range(num_w+1):
 
-				fov=np.uint8(exposure.rescale_intensity(image[int(h*fov_dim):min(int((h+1)*fov_dim),height)+1,int(w*fov_dim):min(int((w+1)*fov_dim),width)+1],out_range=(0,255)))
+				fov=np.uint8(exposure.rescale_intensity(image[int(h*fov_dim):min(int((h+1)*fov_dim),height),int(w*fov_dim):min(int((w+1)*fov_dim),width)],out_range=(0,255)))
 				if fov.shape[0]<fov_dim or fov.shape[1]<fov_dim:
 					background[fov]=fov
 					fov=background
@@ -51,23 +51,23 @@ def extract_images(path_to_file,out_folder,fov_dim,black_background=True):
 				background=np.zeros((fov_dim,fov_dim,3),dtype='uint8')
 		else:
 			if c_list is None:
-				background=np.uint8(np.ones((fov_dim,fov_dim))*255)
+				background=np.uint8(np.ones((fov_dim,fov_dim),dtype='uint8')*255)
 			else:
-				background=np.uint8(np.ones((fov_dim,fov_dim,3))*255)
+				background=np.uint8(np.ones((fov_dim,fov_dim,3),dtype='uint8')*255)
 
 		for h in range(num_h):
 
 			for w in range(num_w):
 
 				if c_list is None:
-					fov=np.uint8(exposure.rescale_intensity(image[int(h*fov_dim):min(int((h+1)*fov_dim),height)+1,int(w*fov_dim):min(int((w+1)*fov_dim),width)+1],out_range=(0,255)))
+					fov=np.uint8(exposure.rescale_intensity(image[int(h*fov_dim):min(int((h+1)*fov_dim),height),int(w*fov_dim):min(int((w+1)*fov_dim),width)],out_range=(0,255)))
 					if fov.shape[0]<fov_dim or fov.shape[1]<fov_dim:
 						background[fov]=fov
 						fov=background
 					cv2.imwrite(os.path.join(out_folder,os.path.splitext(os.path.basename(path_to_file))[0]+'_'+str(w)+str(h)+'.jpg'),fov)
 				else:
 					for c in c_list:
-						fov=np.uint8(exposure.rescale_intensity(image[int(h*fov_dim):min(int((h+1)*fov_dim),height)+1,int(w*fov_dim):min(int((w+1)*fov_dim),width)+1,c],out_range=(0,255)))
+						fov=np.uint8(exposure.rescale_intensity(image[int(h*fov_dim):min(int((h+1)*fov_dim),height),int(w*fov_dim):min(int((w+1)*fov_dim),width),c],out_range=(0,255)))
 						if fov.shape[0]<fov_dim or fov.shape[1]<fov_dim:
 							background[fov]=fov
 							fov=background
@@ -85,7 +85,7 @@ def extract_images(path_to_file,out_folder,fov_dim,black_background=True):
 		if black_background:
 			background=np.zeros((fov_dim,fov_dim),dtype='uint8')
 		else:
-			background=np.uint8(np.ones((fov_dim,fov_dim))*255)
+			background=np.uint8(np.ones((fov_dim,fov_dim),dtype='uint8')*255)
 
 		for c in c_list:
 
@@ -93,7 +93,7 @@ def extract_images(path_to_file,out_folder,fov_dim,black_background=True):
 
 				for h in range(fov_dim):
 
-					fov=np.uint8(exposure.rescale_intensity(image[c,int(h*fov_dim):min(int((h+1)*fov_dim),height)+1,int(w*fov_dim):min(int((w+1)*fov_dim),width)+1],out_range=(0,255)))
+					fov=np.uint8(exposure.rescale_intensity(image[c,int(h*fov_dim):min(int((h+1)*fov_dim),height),int(w*fov_dim):min(int((w+1)*fov_dim),width)],out_range=(0,255)))
 					if fov.shape[0]<fov_dim or fov.shape[1]<fov_dim:
 						background[fov]=fov
 						fov=background
@@ -114,7 +114,7 @@ def extract_images(path_to_file,out_folder,fov_dim,black_background=True):
 		if black_background:
 			background=np.zeros((fov_dim,fov_dim),dtype='uint8')
 		else:
-			background=np.uint8(np.ones((fov_dim,fov_dim))*255)
+			background=np.uint8(np.ones((fov_dim,fov_dim),dtype='uint8')*255)
 
 		for h in range(num_h):
 
@@ -123,7 +123,7 @@ def extract_images(path_to_file,out_folder,fov_dim,black_background=True):
 				for c in range(len(c_list)):
 
 					image=np.array(file.get_frame(z=0,t=0,c=c))
-					fov=np.uint8(exposure.rescale_intensity(image[int(h*fov_dim):min(int((h+1)*fov_dim),height)+1,int(w*fov_dim):min(int((w+1)*fov_dim),width)+1],out_range=(0,255)))
+					fov=np.uint8(exposure.rescale_intensity(image[int(h*fov_dim):min(int((h+1)*fov_dim),height),int(w*fov_dim):min(int((w+1)*fov_dim),width)],out_range=(0,255)))
 					if fov.shape[0]<fov_dim or fov.shape[1]<fov_dim:
 						background[fov]=fov
 						fov=background
