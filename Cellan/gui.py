@@ -667,7 +667,7 @@ class WindowLv2_AnalyzeMultiChannels(wx.Frame):
 
 	def __init__(self,title):
 
-		super(WindowLv2_AnalyzeMultiChannels,self).__init__(parent=None,title=title,size=(1000,320))
+		super(WindowLv2_AnalyzeMultiChannels,self).__init__(parent=None,title=title,size=(1000,330))
 		self.detector_path=None
 		self.path_to_detector=None
 		self.cell_kinds=None
