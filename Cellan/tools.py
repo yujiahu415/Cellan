@@ -30,7 +30,7 @@ def extract_images(path_to_file,out_folder,fov_dim,black_background=True):
 				if fov.shape[0]<fov_dim or fov.shape[1]<fov_dim:
 					background[fov]=fov
 					fov=background
-				cv2.imwrite(os.path.join(out_folder,os.path.splitext(os.path.basename(path_to_file))[0]+'_'+str(w)+str(h)+'.png'),fov)
+				cv2.imwrite(os.path.join(out_folder,os.path.splitext(os.path.basename(path_to_file))[0]+'_'+str(w)+str(h)+'.jpg'),fov)
 
 	elif os.path.splitext(os.path.basename(path_to_file))[1] in ['.tif','.TIF','.tiff','.TIFF']:
 
@@ -64,14 +64,14 @@ def extract_images(path_to_file,out_folder,fov_dim,black_background=True):
 					if fov.shape[0]<fov_dim or fov.shape[1]<fov_dim:
 						background[fov]=fov
 						fov=background
-					cv2.imwrite(os.path.join(out_folder,os.path.splitext(os.path.basename(path_to_file))[0]+'_'+str(w)+str(h)+'.png'),fov)
+					cv2.imwrite(os.path.join(out_folder,os.path.splitext(os.path.basename(path_to_file))[0]+'_'+str(w)+str(h)+'.jpg'),fov)
 				else:
 					for c in c_list:
 						fov=np.uint8(exposure.rescale_intensity(image[int(h*fov_dim):min(int((h+1)*fov_dim),height)+1,int(w*fov_dim):min(int((w+1)*fov_dim),width)+1,c],out_range=(0,255)))
 						if fov.shape[0]<fov_dim or fov.shape[1]<fov_dim:
 							background[fov]=fov
 							fov=background
-						cv2.imwrite(os.path.join(out_folder,os.path.splitext(os.path.basename(path_to_file))[0]+'_'+str(w)+str(h)+'_c'+str(c)+'.png'),fov)
+						cv2.imwrite(os.path.join(out_folder,os.path.splitext(os.path.basename(path_to_file))[0]+'_'+str(w)+str(h)+'_c'+str(c)+'.jpg'),fov)
 
 	elif os.path.splitext(os.path.basename(path_to_file))[1] in ['.qptiff','.QPTIFF']:
 
@@ -97,7 +97,7 @@ def extract_images(path_to_file,out_folder,fov_dim,black_background=True):
 					if fov.shape[0]<fov_dim or fov.shape[1]<fov_dim:
 						background[fov]=fov
 						fov=background
-					imwrite(os.path.join(out_folder,os.path.splitext(os.path.basename(path_to_file))[0]+'_'+str(w)+str(h)+'_c'+str(c)+'.png'),fov)
+					imwrite(os.path.join(out_folder,os.path.splitext(os.path.basename(path_to_file))[0]+'_'+str(w)+str(h)+'_c'+str(c)+'.jpg'),fov)
 
 	else:
 
@@ -127,6 +127,6 @@ def extract_images(path_to_file,out_folder,fov_dim,black_background=True):
 					if fov.shape[0]<fov_dim or fov.shape[1]<fov_dim:
 						background[fov]=fov
 						fov=background
-					cv2.imwrite(os.path.join(out_folder,os.path.splitext(os.path.basename(path_to_file))[0]+'_'+str(w)+str(h)+'_c'+str(c)+'.png'),fov)
+					cv2.imwrite(os.path.join(out_folder,os.path.splitext(os.path.basename(path_to_file))[0]+'_'+str(w)+str(h)+'_c'+str(c)+'.jpg'),fov)
 
 
