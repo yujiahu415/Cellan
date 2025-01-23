@@ -174,8 +174,7 @@ class AnalyzeCells():
 			dfs.append(pd.DataFrame(cell_areas[cell_name],columns=['areas']).reset_index(drop=True))
 			for c in analysis_channels:
 				dfs.append(pd.DataFrame(cell_intensities[cell_name][c],columns=['intensity_'+str(c)]).reset_index(drop=True))
-
-			out_sheet=os.path.join(self.results_path,cell_name+'_summary.xlsx')
+			out_sheet=os.path.join(self.results_path,os.path.splitext(os.path.basename(self.path_to_file))[0]+'_'+cell_name+'_summary.xlsx')
 			pd.concat(dfs,axis=1).to_excel(out_sheet,float_format='%.2f',index_label='ID/parameter')
 
 		print('Analysis completed!')
@@ -286,7 +285,7 @@ class AnalyzeCells():
 			dfs.append(pd.DataFrame(cell_centers[cell_name],columns=['center_x','center_y']).reset_index(drop=True))
 			dfs.append(pd.DataFrame(cell_areas[cell_name],columns=['areas']).reset_index(drop=True))
 			dfs.append(pd.DataFrame(cell_intensities[cell_name],columns=['intensities']).reset_index(drop=True))
-			out_sheet=os.path.join(self.results_path,cell_name+'_summary.xlsx')
+			out_sheet=os.path.join(self.results_path,os.path.splitext(os.path.basename(self.path_to_file))[0]+'_'+cell_name+'_summary.xlsx')
 			pd.concat(dfs,axis=1).to_excel(out_sheet,float_format='%.2f',index_label='ID/parameter')
 
 		print('Analysis completed!')
