@@ -668,11 +668,11 @@ class WindowLv2_AnalyzeMultiChannels(wx.Frame):
 		self.result_path=None
 		self.detection_threshold=None
 		self.expansion=None
-		self.fov_dim=1
+		self.fov_dim=1280
 		self.names_colors=None
 		self.detection_channel=0
 		self.analysis_channels=[]
-		self.imagewidth=None
+		self.black_background=True
 		
 		self.dispaly_window()
 
@@ -711,16 +711,6 @@ class WindowLv2_AnalyzeMultiChannels(wx.Frame):
 		module_detection.Add(button_detection,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
 		module_detection.Add(self.text_detection,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
 		boxsizer.Add(module_detection,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
-		boxsizer.Add(0,5,0)
-
-		module_fov=wx.BoxSizer(wx.HORIZONTAL)
-		button_fov=wx.Button(panel,label='Specify the field of view\nin an image',size=(300,40))
-		button_fov.Bind(wx.EVT_BUTTON,self.specify_fov)
-		wx.Button.SetToolTip(button_fov,'Specify the number (n) of field of view for height/width, the image will be divided into smaller field of view with the dimension of (height/n) X (width/n).')
-		self.text_fov=wx.StaticText(panel,label='Default: 1',style=wx.ALIGN_LEFT|wx.ST_ELLIPSIZE_END)
-		module_fov.Add(button_fov,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
-		module_fov.Add(self.text_fov,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
-		boxsizer.Add(module_fov,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
 		boxsizer.Add(0,5,0)
 
 		module_expansion=wx.BoxSizer(wx.HORIZONTAL)
@@ -804,6 +794,11 @@ class WindowLv2_AnalyzeMultiChannels(wx.Frame):
 			with open(os.path.join(self.path_to_detector,'model_parameters.txt')) as f:
 				model_parameters=f.read()
 			cell_names=json.loads(model_parameters)['cell_names']
+			self.fov_dim=int(json.loads(model_parameters)['inferencing_framesize'])
+			if int(json.loads(model_parameters)['black_background'])==0:
+				self.black_background=True
+			else:
+				self.black_background=False
 			if len(cell_names)>1:
 				dialog1=wx.MultiChoiceDialog(self,message='Specify which cells involved in analysis',
 					caption='Cell kind',choices=cell_names)
@@ -833,33 +828,6 @@ class WindowLv2_AnalyzeMultiChannels(wx.Frame):
 					self.detection_threshold[cell_name]=0
 				dialog1.Destroy()
 			self.text_detection.SetLabel('Detector: '+detector+'; '+'The cell kinds / detection threshold: '+str(self.detection_threshold)+'.')
-		dialog.Destroy()
-
-
-	def specify_fov(self,event):
-
-		dialog=wx.NumberEntryDialog(self,'Enter the number of sections\nthe width and height should be divided','Enter a number:','Number of field of view',1,1,10000)
-		if dialog.ShowModal()==wx.ID_OK:
-			self.fov_dim=int(dialog.GetValue())
-		else:
-			self.fov_dim=1
-		dialog.Destroy()
-
-		dialog=wx.MessageDialog(self,'Proportional resize the field of views? Downsizing may make the analysis more efficient.','(Optional) resize the filed of views?',wx.YES_NO|wx.ICON_QUESTION)
-		if dialog.ShowModal()==wx.ID_YES:
-			dialog1=wx.NumberEntryDialog(self,'Enter the desired image width','The unit is pixel:','Desired image width',1280,1,10000)
-			if dialog1.ShowModal()==wx.ID_OK:
-				self.imagewidth=int(dialog1.GetValue())
-				if self.imagewidth<128:
-					self.imagewidth=128
-				self.text_fov.SetLabel('The height and width of an image will be divided by : '+str(self.fov_dim)+' (resize fov width to '+str(self.imagewidth)+').')
-			else:
-				self.imagewidth=None
-				self.text_fov.SetLabel('The height and width of an image will be divided by : '+str(self.fov_dim)+' (No resizing of fov).')
-			dialog1.Destroy()
-		else:
-			self.imagewidth=None
-			self.text_fov.SetLabel('The height and width of an image will be divided by : '+str(self.fov_dim)+' (No resizing of fov).')
 		dialog.Destroy()
 
 
