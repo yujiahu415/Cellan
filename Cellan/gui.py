@@ -373,10 +373,10 @@ class WindowLv2_TrainDetectors(wx.Frame):
 		boxsizer.Add(0,5,0)
 
 		module_inferencingsize=wx.BoxSizer(wx.HORIZONTAL)
-		button_inferencingsize=wx.Button(panel,label='Specify the dimension of one\nfield of view in images to analyze',size=(300,40))
+		button_inferencingsize=wx.Button(panel,label='Specify whether the background is\nblack/darker in training images',size=(300,40))
 		button_inferencingsize.Bind(wx.EVT_BUTTON,self.input_inferencingsize)
-		wx.Button.SetToolTip(button_inferencingsize,'This should be the number of the width of your training images.')
-		self.text_inferencingsize=wx.StaticText(panel,label='Default: 1280.',style=wx.ALIGN_LEFT|wx.ST_ELLIPSIZE_END)
+		wx.Button.SetToolTip(button_inferencingsize,'This helps the trained Detector to make up the missing regions when analyzing images with the fixed field of view.')
+		self.text_inferencingsize=wx.StaticText(panel,label='Default: black/darker background.',style=wx.ALIGN_LEFT|wx.ST_ELLIPSIZE_END)
 		module_inferencingsize.Add(button_inferencingsize,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
 		module_inferencingsize.Add(self.text_inferencingsize,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
 		boxsizer.Add(module_inferencingsize,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
@@ -670,7 +670,7 @@ class WindowLv2_AnalyzeMultiChannels(wx.Frame):
 
 	def __init__(self,title):
 
-		super(WindowLv2_AnalyzeMultiChannels,self).__init__(parent=None,title=title,size=(1000,380))
+		super(WindowLv2_AnalyzeMultiChannels,self).__init__(parent=None,title=title,size=(1000,340))
 		self.detector_path=None
 		self.path_to_detector=None
 		self.cell_kinds=None
@@ -892,7 +892,7 @@ class WindowLv2_AnalyzeSingleChannel(wx.Frame):
 
 	def __init__(self,title):
 
-		super(WindowLv2_AnalyzeSingleChannel,self).__init__(parent=None,title=title,size=(1000,340))
+		super(WindowLv2_AnalyzeSingleChannel,self).__init__(parent=None,title=title,size=(1000,300))
 		self.detector_path=None
 		self.path_to_detector=None
 		self.cell_kinds=None
