@@ -20,16 +20,19 @@ class Detector():
 
 		self.device='cuda' if torch.cuda.is_available() else 'cpu' # whether the GPU is available, if so, use GPU
 		self.cell_mapping=None # the celln categories and names in a Detector
+		self.inferencing_framesize=None
+		self.black_background=None
 		self.current_detector=None # the current Detector used for inference
 
 
-	def train(self,path_to_annotation,path_to_trainingimages,path_to_detector,iteration_num,inference_size,num_rois):
+	def train(self,path_to_annotation,path_to_trainingimages,path_to_detector,iteration_num,inference_size,num_rois,black_background=0):
 
 		# path_to_annotation: the path to the .json file that stores the annotations in coco format
 		# path_to_trainingimages: the folder that stores all the training images
 		# iteration_num: the number of training iterations
 		# inference_size: the Detector inferencing frame size
 		# num_rois: the batch size of ROI heads per image
+		# black_background: whether the background of images to analyze is black/darker
 
 		if str('Cellan_detector_train') in DatasetCatalog.list():
 			DatasetCatalog.remove('Cellan_detector_train')
@@ -85,6 +88,7 @@ class Detector():
 		
 		model_parameters_dict['cell_mapping']={}
 		model_parameters_dict['inferencing_framesize']=int(inference_size)
+		model_parameters_dict['black_background']=int(black_background)
 
 		for i in range(len(classnames)):
 			model_parameters_dict['cell_mapping'][i]=classnames[i]
@@ -128,9 +132,14 @@ class Detector():
 
 		cell_names=json.loads(model_parameters)['cell_names']
 		dt_infersize=int(json.loads(model_parameters)['inferencing_framesize'])
+		bg=int(json.loads(model_parameters)['black_background'])
 
 		print('The total categories of cells in this Detector: '+str(cell_names))
 		print('The inferencing framesize of this Detector: '+str(dt_infersize))
+		if bg==0:
+			print('The images that can be analyzed by this Detector have black/darker background')
+		else:
+			print('The images that can be analyzed by this Detector have white/lighter background')
 
 		cfg=get_cfg()
 		cfg.merge_from_file(os.path.join(path_to_detector,'config.yaml'))
@@ -168,11 +177,18 @@ class Detector():
 			model_parameters=f.read()
 		self.cell_mapping=json.loads(model_parameters)['cell_mapping']
 		cell_names=json.loads(model_parameters)['cell_names']
-		dt_infersize=int(json.loads(model_parameters)['inferencing_framesize'])
+		self.inferencing_framesize=int(json.loads(model_parameters)['inferencing_framesize'])
+		bg=int(json.loads(model_parameters)['black_background'])
 
 		print('The total categories of cells in this Detector: '+str(cell_names))
 		print('The cells of interest in this Detector: '+str(cell_kinds))
-		print('The inferencing framesize of this Detector: '+str(dt_infersize))
+		print('The inferencing framesize of this Detector: '+str(self.inferencing_framesize))
+		if bg==0:
+			self.black_background=True
+			print('The images that can be analyzed by this Detector have black/darker background')
+		else:
+			self.black_background=False
+			print('The images that can be analyzed by this Detector have white/lighter background')
 
 		cfg=get_cfg()
 		cfg.merge_from_file(config)
