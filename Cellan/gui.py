@@ -249,9 +249,9 @@ class WindowLv2_GenerateImages(wx.Frame):
 		boxsizer.Add(0,5,0)
 
 		module_fov=wx.BoxSizer(wx.HORIZONTAL)
-		button_fov=wx.Button(panel,label='Specify the dimension of one\nfield of view in an image',size=(300,40))
+		button_fov=wx.Button(panel,label='Specify the dimension of one\nfield of view in images to analyze',size=(300,40))
 		button_fov.Bind(wx.EVT_BUTTON,self.specify_fov)
-		wx.Button.SetToolTip(button_fov,'Specify the width of one field of view (square shape), the image will be divided into smaller field of view with the specified dimension.')
+		wx.Button.SetToolTip(button_fov,'Specify the width of one field of view (square shape), the images to analyze will be divided into smaller fields of view according to the specified dimension.')
 		self.text_fov=wx.StaticText(panel,label='Default: 1280',style=wx.ALIGN_LEFT|wx.ST_ELLIPSIZE_END)
 		module_fov.Add(button_fov,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
 		module_fov.Add(self.text_fov,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
@@ -338,6 +338,7 @@ class WindowLv2_TrainDetectors(wx.Frame):
 		self.path_to_annotation=None
 		self.num_rois=128
 		self.inference_size=1280
+		self.black_background=True
 		self.iteration_num=5000
 		self.detector_path=os.path.join(the_absolute_current_path,'detectors')
 		self.path_to_detector=None
@@ -372,9 +373,9 @@ class WindowLv2_TrainDetectors(wx.Frame):
 		boxsizer.Add(0,5,0)
 
 		module_inferencingsize=wx.BoxSizer(wx.HORIZONTAL)
-		button_inferencingsize=wx.Button(panel,label='Specify the inferencing framesize\nfor the Detector to train',size=(300,40))
+		button_inferencingsize=wx.Button(panel,label='Specify the dimension of one\nfield of view in images to analyze',size=(300,40))
 		button_inferencingsize.Bind(wx.EVT_BUTTON,self.input_inferencingsize)
-		wx.Button.SetToolTip(button_inferencingsize,'Should be an even number. Larger size means higher accuracy but slower speed.')
+		wx.Button.SetToolTip(button_inferencingsize,'This should be the number of the width of your training images.')
 		self.text_inferencingsize=wx.StaticText(panel,label='Default: 1280.',style=wx.ALIGN_LEFT|wx.ST_ELLIPSIZE_END)
 		module_inferencingsize.Add(button_inferencingsize,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
 		module_inferencingsize.Add(self.text_inferencingsize,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
@@ -431,12 +432,21 @@ class WindowLv2_TrainDetectors(wx.Frame):
 
 	def input_inferencingsize(self,event):
 
-		dialog=wx.NumberEntryDialog(self,'Input the inferencing frame size\nof the Detector to train','Enter a number:','Divisible by 2',1280,1,2048)
+		dialog=wx.NumberEntryDialog(self,'Input the dimension of one field of view\nin the images to analyze','Enter a number:','Same as the width of training images',1280,1,2048)
 		if dialog.ShowModal()==wx.ID_OK:
 			self.inference_size=int(dialog.GetValue())
 			self.text_inferencingsize.SetLabel('Inferencing frame size: '+str(self.inference_size)+'.')
 		dialog.Destroy()
-		
+
+		dialog=wx.MessageDialog(self,'Is the background in the images black/darker?','Darker background?',wx.YES_NO|wx.ICON_QUESTION)
+		if dialog.ShowModal()==wx.ID_YES:
+			self.black_background=True
+			self.text_fov.SetLabel('The dimension of one field of view : '+str(self.fov_dim)+' X '+str(self.fov_dim)+' (background darker).')
+		else:
+			self.black_background=False
+			self.text_fov.SetLabel('The dimension of one field of view : '+str(self.fov_dim)+' X '+str(self.fov_dim)+' (background lighter).')
+		dialog.Destroy()
+
 
 	def input_iterations(self,event):
 
