@@ -372,14 +372,14 @@ class WindowLv2_TrainDetectors(wx.Frame):
 		boxsizer.Add(module_selectannotation,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
 		boxsizer.Add(0,5,0)
 
-		module_inferencingsize=wx.BoxSizer(wx.HORIZONTAL)
-		button_inferencingsize=wx.Button(panel,label='Specify whether the background is\nblack/darker in training images',size=(300,40))
-		button_inferencingsize.Bind(wx.EVT_BUTTON,self.input_inferencingsize)
-		wx.Button.SetToolTip(button_inferencingsize,'This helps the trained Detector to make up the missing regions when analyzing images with the fixed field of view.')
-		self.text_inferencingsize=wx.StaticText(panel,label='Default: black/darker background.',style=wx.ALIGN_LEFT|wx.ST_ELLIPSIZE_END)
-		module_inferencingsize.Add(button_inferencingsize,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
-		module_inferencingsize.Add(self.text_inferencingsize,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
-		boxsizer.Add(module_inferencingsize,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
+		module_background=wx.BoxSizer(wx.HORIZONTAL)
+		button_background=wx.Button(panel,label='Specify whether the background is\nblack/darker in training images',size=(300,40))
+		button_background.Bind(wx.EVT_BUTTON,self.specify_background)
+		wx.Button.SetToolTip(button_background,'This helps the trained Detector to make up the missing regions when analyzing images with the fixed field of view.')
+		self.text_background=wx.StaticText(panel,label='Default: black/darker background.',style=wx.ALIGN_LEFT|wx.ST_ELLIPSIZE_END)
+		module_background.Add(button_background,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
+		module_background.Add(self.text_background,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
+		boxsizer.Add(module_background,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
 		boxsizer.Add(0,5,0)
 
 		module_iterations=wx.BoxSizer(wx.HORIZONTAL)
@@ -430,21 +430,15 @@ class WindowLv2_TrainDetectors(wx.Frame):
 		dialog.Destroy()
 
 
-	def input_inferencingsize(self,event):
-
-		dialog=wx.NumberEntryDialog(self,'Input the dimension of one field of view\nin the images to analyze','Enter a number:','Same as the width of training images',1280,1,2048)
-		if dialog.ShowModal()==wx.ID_OK:
-			self.inference_size=int(dialog.GetValue())
-			self.text_inferencingsize.SetLabel('Inferencing frame size: '+str(self.inference_size)+'.')
-		dialog.Destroy()
+	def specify_background(self,event):
 
 		dialog=wx.MessageDialog(self,'Is the background in the images black/darker?','Darker background?',wx.YES_NO|wx.ICON_QUESTION)
 		if dialog.ShowModal()==wx.ID_YES:
-			self.black_background=True
-			self.text_fov.SetLabel('The dimension of one field of view : '+str(self.fov_dim)+' X '+str(self.fov_dim)+' (background darker).')
+			self.black_background=0
+			self.text_background.SetLabel('The background in images is black/darker.')
 		else:
-			self.black_background=False
-			self.text_fov.SetLabel('The dimension of one field of view : '+str(self.fov_dim)+' X '+str(self.fov_dim)+' (background lighter).')
+			self.black_background=1
+			self.text_background.SetLabel('The background in images is white/lighter.')
 		dialog.Destroy()
 
 
@@ -477,6 +471,8 @@ class WindowLv2_TrainDetectors(wx.Frame):
 					self.num_rois=512
 			dialog.Destroy()
 
+
+
 			do_nothing=False
 			stop=False
 			while stop is False:
@@ -495,7 +491,7 @@ class WindowLv2_TrainDetectors(wx.Frame):
 
 			if do_nothing is False:
 				DT=Detector()
-				DT.train(self.path_to_annotation,self.path_to_trainingimages,self.path_to_detector,self.iteration_num,self.inference_size,self.num_rois)
+				DT.train(self.path_to_annotation,self.path_to_trainingimages,self.path_to_detector,self.iteration_num,self.inference_size,self.num_rois,black_background=self.black_background)
 
 
 
