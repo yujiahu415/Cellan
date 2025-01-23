@@ -29,7 +29,6 @@ class AnalyzeCells():
 		os.makedirs(self.results_path,exist_ok=True)
 		self.expansion=expansion
 		self.fov_dim=fov_dim
-		self.imagewidth=imagewidth
 
 
 	def analyze_multichannels(self,names_colors,detection_channel=0,analysis_channels=[]):
@@ -72,18 +71,14 @@ class AnalyzeCells():
 		detect_image=cv2.cvtColor(np.uint8(detect_image),cv2.COLOR_GRAY2BGR)
 		width=detect_image.shape[1]
 		height=detect_image.shape[0]
-		fov_width=int(width/self.fov_dim)
-		fov_height=int(height/self.fov_dim)
+		num_w=int(width/fov_dim)
+		num_h=int(height/fov_dim)
 
-		if self.imagewidth is not None:
-			calculate_width=self.imagewidth
-		else:
-			calculate_width=fov_width
-		thickness=max(1,round(calculate_width/960))
+		thickness=max(1,round(fov_dim/960))
 
-		for w in range(self.fov_dim):
+		for h in range(num_h):
 
-			for h in range(self.fov_dim):
+			for h in range(num_w):
 
 				detect_fov=np.uint8(exposure.rescale_intensity(detect_image[h*fov_height:(h+1)*fov_height,w*fov_width:(w+1)*fov_width],out_range=(0,255)))
 				if self.imagewidth is not None:
