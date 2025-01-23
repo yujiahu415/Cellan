@@ -72,28 +72,43 @@ class AnalyzeCells():
 		detect_image=cv2.cvtColor(np.uint8(detect_image),cv2.COLOR_GRAY2BGR)
 		width=detect_image.shape[1]
 		height=detect_image.shape[0]
-		num_w=int(width/fov_dim)
-		num_h=int(height/fov_dim)
+		num_w=int(width/self.fov_dim)
+		num_h=int(height/self.fov_dim)
 
-		thickness=max(1,round(fov_dim/960))
+		thickness=max(1,round(self.fov_dim/960))
 
-		for h in range(num_h):
+		for h in range(num_h+1):
 
-			for h in range(num_w):
+			for h in range(num_w+1):
 
-				detect_fov=np.uint8(exposure.rescale_intensity(detect_image[int(h*fov_dim):min(int((h+1)*fov_dim),height),int(w*fov_dim):min(int((w+1)*fov_dim),width)],out_range=(0,255)))
+				detect_fov=np.uint8(exposure.rescale_intensity(detect_image[int(h*self.fov_dim):min(int((h+1)*self.fov_dim),height),int(w*self.fov_dim):min(int((w+1)*self.fov_dim),width)],out_range=(0,255)))
+				if detect_fov.shape[0]<self.fov_dim or detect_fov.shape[1]<self.fov_dim:
+					if self.black_background:
+						background=np.zeros((self.fov_dim,self.fov_dim),dtype='uint8')
+					else:
+						background=np.uint8(np.ones((self.fov_dim,self.fov_dim),dtype='uint8')*255)
+					background[:detect_fov.shape[0],:detect_fov.shape[1]]=detect_fov
+					detect_fov=background
 				analysis_fovs={}
+
 				for c in analysis_channels:
+
 					if self.lif:
-						analysis_fov=np.array(file.get_frame(z=0,t=0,c=c))[h*fov_height:(h+1)*fov_height,w*fov_width:(w+1)*fov_width]
+						analysis_fov=np.array(file.get_frame(z=0,t=0,c=c))[int(h*self.fov_dim):min(int((h+1)*self.fov_dim),height),int(w*self.fov_dim):min(int((w+1)*self.fov_dim),width)]
 					else:
 						if os.path.splitext(os.path.basename(self.path_to_file))[1] in ['.qptiff','.QPTIFF']:
-							analysis_fov=imread(self.path_to_file)[c,h*fov_height:(h+1)*fov_height,w*fov_width:(w+1)*fov_width]
+							analysis_fov=imread(self.path_to_file)[c,int(h*self.fov_dim):min(int((h+1)*self.fov_dim),height),int(w*self.fov_dim):min(int((w+1)*self.fov_dim),width)]
 						else:
-							analysis_fov=imread(self.path_to_file)[h*fov_height:(h+1)*fov_height,w*fov_width:(w+1)*fov_width,c]
-					if self.imagewidth is not None:
-						analysis_fov=cv2.resize(analysis_fov,(self.imagewidth,int(analysis_fov.shape[0]*self.imagewidth/analysis_fov.shape[1])),interpolation=cv2.INTER_AREA)
+							analysis_fov=imread(self.path_to_file)[int(h*self.fov_dim):min(int((h+1)*self.fov_dim),height),int(w*self.fov_dim):min(int((w+1)*self.fov_dim),width),c]
+					if analysis_fov.shape[0]<self.fov_dim or analysis_fov.shape[1]<self.fov_dim:
+						if self.black_background:
+							background=np.zeros((self.fov_dim,self.fov_dim),dtype='uint8')
+						else:
+							background=np.uint8(np.ones((self.fov_dim,self.fov_dim),dtype='uint8')*255)
+						background[:analysis_fov.shape[0],:analysis_fov.shape[1]]=analysis_fov
+						analysis_fov=background
 					analysis_fovs[c]=analysis_fov
+
 				output=self.detector.inference([{'image':torch.as_tensor(detect_fov.astype('float32').transpose(2,0,1))}])
 				instances=output[0]['instances'].to('cpu')
 				masks=instances.pred_masks.numpy().astype(np.uint8)
@@ -135,7 +150,7 @@ class AnalyzeCells():
 										cnts,_=cv2.findContours((mask*255).astype(np.uint8),cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_NONE)
 										cnt=sorted(cnts,key=cv2.contourArea,reverse=True)[0]
 										goodcontours.append(cnt)
-										cell_centers[cell_name].append((int(cv2.moments(cnt)['m10']/cv2.moments(cnt)['m00'])+int(w*fov_width),int(cv2.moments(cnt)['m01']/cv2.moments(cnt)['m00'])+int(h*fov_height)))
+										cell_centers[cell_name].append((int(cv2.moments(cnt)['m10']/cv2.moments(cnt)['m00'])+int(w*self.fov_dim),int(cv2.moments(cnt)['m01']/cv2.moments(cnt)['m00'])+int(h*self.fov_dim)))
 										cell_areas[cell_name].append(np.sum(np.array(mask),axis=(0,1)))
 
 									for c in analysis_channels:
@@ -187,14 +202,10 @@ class AnalyzeCells():
 		image=imread(self.path_to_file)
 		width=image.shape[1]
 		height=image.shape[0]
-		fov_width=int(width/self.fov_dim)
-		fov_height=int(height/self.fov_dim)
+		num_w=int(width/self.fov_dim)
+		num_h=int(height/self.fov_dim)
 
-		if self.imagewidth is not None:
-			calculate_width=self.imagewidth
-		else:
-			calculate_width=fov_width
-		thickness=max(1,round(calculate_width/960))
+		thickness=max(1,round(self.fov_dim/960))
 
 		for w in range(self.fov_dim):
 
