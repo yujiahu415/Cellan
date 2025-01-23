@@ -376,7 +376,7 @@ class WindowLv2_TrainDetectors(wx.Frame):
 		button_background=wx.Button(panel,label='Specify whether the background is\nblack/darker in training images',size=(300,40))
 		button_background.Bind(wx.EVT_BUTTON,self.specify_background)
 		wx.Button.SetToolTip(button_background,'This helps the trained Detector to make up the missing regions when analyzing images with the fixed field of view.')
-		self.text_background=wx.StaticText(panel,label='Default: black/darker background.',style=wx.ALIGN_LEFT|wx.ST_ELLIPSIZE_END)
+		self.text_background=wx.StaticText(panel,label='Not specified.',style=wx.ALIGN_LEFT|wx.ST_ELLIPSIZE_END)
 		module_background.Add(button_background,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
 		module_background.Add(self.text_background,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
 		boxsizer.Add(module_background,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
@@ -472,7 +472,7 @@ class WindowLv2_TrainDetectors(wx.Frame):
 			dialog.Destroy()
 
 			images=[i for i in os.listdir(self.path_to_trainingimages) if i.endswith('.jpg')]
-			self.inference_size=int(cv2.imread(os.path.join(self.path_to_trainingimages,images[0])).shape[1]):
+			self.inference_size=int(cv2.imread(os.path.join(self.path_to_trainingimages,images[0])).shape[1])
 
 			do_nothing=False
 			stop=False
