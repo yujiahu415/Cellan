@@ -337,8 +337,8 @@ class WindowLv2_TrainDetectors(wx.Frame):
 		self.path_to_trainingimages=None
 		self.path_to_annotation=None
 		self.num_rois=128
-		self.inference_size=1280
-		self.black_background=True
+		self.inference_size=None
+		self.black_background=None
 		self.iteration_num=5000
 		self.detector_path=os.path.join(the_absolute_current_path,'detectors')
 		self.path_to_detector=None
@@ -453,9 +453,9 @@ class WindowLv2_TrainDetectors(wx.Frame):
 
 	def train_detector(self,event):
 
-		if self.path_to_trainingimages is None or self.path_to_annotation is None:
+		if self.path_to_trainingimages is None or self.path_to_annotation is None or self.black_background is None:
 
-			wx.MessageBox('No training images / annotation file selected.','Error',wx.OK|wx.ICON_ERROR)
+			wx.MessageBox('No training images / annotation file / background in images specified.','Error',wx.OK|wx.ICON_ERROR)
 
 		else:
 
@@ -471,7 +471,8 @@ class WindowLv2_TrainDetectors(wx.Frame):
 					self.num_rois=512
 			dialog.Destroy()
 
-
+			images=[i for i in os.listdir(self.path_to_trainingimages) if i.endswith('.jpg')]
+			self.inference_size=int(cv2.imread(os.path.join(self.path_to_trainingimages,images[0])).shape[1]):
 
 			do_nothing=False
 			stop=False
