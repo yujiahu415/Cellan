@@ -7,7 +7,7 @@ from skimage import exposure
 
 
 
-def extract_images(path_to_file,out_folder,fov_dim,imagewidth=None,black_background=True):
+def extract_images(path_to_file,out_folder,fov_dim,black_background=True):
 
 	if os.path.splitext(os.path.basename(path_to_file))[1] in ['.svs','.SVS']:
 
@@ -30,8 +30,6 @@ def extract_images(path_to_file,out_folder,fov_dim,imagewidth=None,black_backgro
 				if fov.shape[0]<fov_dim or fov.shape[1]<fov_dim:
 					background[fov]=fov
 					fov=background
-				if imagewidth is not None:
-					fov=cv2.resize(fov,(imagewidth,imagewidth),interpolation=cv2.INTER_AREA)
 				cv2.imwrite(os.path.join(out_folder,os.path.splitext(os.path.basename(path_to_file))[0]+'_'+str(w)+str(h)+'.png'),fov)
 
 	elif os.path.splitext(os.path.basename(path_to_file))[1] in ['.tif','.TIF','.tiff','.TIFF']:
@@ -66,8 +64,6 @@ def extract_images(path_to_file,out_folder,fov_dim,imagewidth=None,black_backgro
 					if fov.shape[0]<fov_dim or fov.shape[1]<fov_dim:
 						background[fov]=fov
 						fov=background
-					if imagewidth is not None:
-						fov=cv2.resize(fov,(imagewidth,imagewidth),interpolation=cv2.INTER_AREA)
 					cv2.imwrite(os.path.join(out_folder,os.path.splitext(os.path.basename(path_to_file))[0]+'_'+str(w)+str(h)+'.png'),fov)
 				else:
 					for c in c_list:
@@ -75,8 +71,6 @@ def extract_images(path_to_file,out_folder,fov_dim,imagewidth=None,black_backgro
 						if fov.shape[0]<fov_dim or fov.shape[1]<fov_dim:
 							background[fov]=fov
 							fov=background
-						if imagewidth is not None:
-							fov=cv2.resize(fov,(imagewidth,imagewidth),interpolation=cv2.INTER_AREA)
 						cv2.imwrite(os.path.join(out_folder,os.path.splitext(os.path.basename(path_to_file))[0]+'_'+str(w)+str(h)+'_c'+str(c)+'.png'),fov)
 
 	elif os.path.splitext(os.path.basename(path_to_file))[1] in ['.qptiff','.QPTIFF']:
@@ -103,8 +97,6 @@ def extract_images(path_to_file,out_folder,fov_dim,imagewidth=None,black_backgro
 					if fov.shape[0]<fov_dim or fov.shape[1]<fov_dim:
 						background[fov]=fov
 						fov=background
-					if imagewidth is not None:
-						fov=cv2.resize(fov,(imagewidth,imagewidth),interpolation=cv2.INTER_AREA)
 					imwrite(os.path.join(out_folder,os.path.splitext(os.path.basename(path_to_file))[0]+'_'+str(w)+str(h)+'_c'+str(c)+'.png'),fov)
 
 	else:
@@ -135,8 +127,6 @@ def extract_images(path_to_file,out_folder,fov_dim,imagewidth=None,black_backgro
 					if fov.shape[0]<fov_dim or fov.shape[1]<fov_dim:
 						background[fov]=fov
 						fov=background
-					if imagewidth is not None:
-						fov=cv2.resize(fov,(imagewidth,imagewidth),interpolation=cv2.INTER_AREA)
 					cv2.imwrite(os.path.join(out_folder,os.path.splitext(os.path.basename(path_to_file))[0]+'_'+str(w)+str(h)+'_c'+str(c)+'.png'),fov)
 
 
