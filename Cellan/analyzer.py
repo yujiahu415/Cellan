@@ -207,16 +207,23 @@ class AnalyzeCells():
 
 		thickness=max(1,round(self.fov_dim/960))
 
-		for w in range(self.fov_dim):
+		for h in range(num_h+1):
 
-			for h in range(self.fov_dim):
+			for w in range(num_w+1):
 
-				analysis_fov=image[h*fov_height:(h+1)*fov_height,w*fov_width:(w+1)*fov_width]
+				analysis_fov=image[int(h*self.fov_dim):min(int((h+1)*self.fov_dim),height),int(w*self.fov_dim):min(int((w+1)*self.fov_dim),width)]
 				detect_fov=np.uint8(exposure.rescale_intensity(analysis_fov,out_range=(0,255)))
-
-				if self.imagewidth is not None:
-					analysis_fov=cv2.resize(analysis_fov,(self.imagewidth,int(analysis_fov.shape[0]*self.imagewidth/analysis_fov.shape[1])),interpolation=cv2.INTER_AREA)
-					detect_fov=cv2.resize(detect_fov,(self.imagewidth,int(detect_fov.shape[0]*self.imagewidth/detect_fov.shape[1])),interpolation=cv2.INTER_AREA)
+				if detect_fov.shape[0]<self.fov_dim or detect_fov.shape[1]<self.fov_dim:
+					if self.black_background:
+						background_analysis=np.zeros((self.fov_dim,self.fov_dim,3),dtype='uint8')
+						background_detect=np.zeros((self.fov_dim,self.fov_dim,3),dtype='uint8')
+					else:
+						background_analysis=np.uint8(np.ones((self.fov_dim,self.fov_dim,3),dtype='uint8')*255)
+						background_detect=np.uint8(np.ones((self.fov_dim,self.fov_dim,3),dtype='uint8')*255)
+					background_analysis[:detect_fov.shape[0],:detect_fov.shape[1]]=analysis_fov
+					background_detect[:detect_fov.shape[0],:detect_fov.shape[1]]=detect_fov
+					analysis_fov=background_analysis
+					detect_fov=background_detect
 
 				output=self.detector.inference([{'image':torch.as_tensor(detect_fov.astype('float32').transpose(2,0,1))}])
 				instances=output[0]['instances'].to('cpu')
@@ -259,7 +266,7 @@ class AnalyzeCells():
 										cnts,_=cv2.findContours((mask*255).astype(np.uint8),cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_NONE)
 										cnt=sorted(cnts,key=cv2.contourArea,reverse=True)[0]
 										goodcontours.append(cnt)
-										cell_centers[cell_name].append((int(cv2.moments(cnt)['m10']/cv2.moments(cnt)['m00'])+int(w*fov_width),int(cv2.moments(cnt)['m01']/cv2.moments(cnt)['m00'])+int(h*fov_height)))
+										cell_centers[cell_name].append((int(cv2.moments(cnt)['m10']/cv2.moments(cnt)['m00'])+int(w*self.fov_dim),int(cv2.moments(cnt)['m01']/cv2.moments(cnt)['m00'])+int(h*self.fov_dim)))
 										area=np.sum(np.array(mask),axis=(0,1))
 										cell_areas[cell_name].append(area)
 										to_annotate=np.uint8(exposure.rescale_intensity(analysis_fov,out_range=(0,255)))
