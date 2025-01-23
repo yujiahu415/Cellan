@@ -13,7 +13,7 @@ from skimage import exposure
 
 class AnalyzeCells():
 
-	def __init__(self,path_to_file,results_path,path_to_detector,cell_kinds,detection_threshold=None,expansion=None,fov_dim=1280):
+	def __init__(self,path_to_file,results_path,path_to_detector,cell_kinds,detection_threshold=None,expansion=None,fov_dim=1280,black_background=True):
 
 		self.detector=Detector()
 		self.detector.load(path_to_detector,cell_kinds)
@@ -29,6 +29,7 @@ class AnalyzeCells():
 		os.makedirs(self.results_path,exist_ok=True)
 		self.expansion=expansion
 		self.fov_dim=fov_dim
+		self.black_background=black_background
 
 
 	def analyze_multichannels(self,names_colors,detection_channel=0,analysis_channels=[]):
@@ -80,9 +81,7 @@ class AnalyzeCells():
 
 			for h in range(num_w):
 
-				detect_fov=np.uint8(exposure.rescale_intensity(detect_image[h*fov_height:(h+1)*fov_height,w*fov_width:(w+1)*fov_width],out_range=(0,255)))
-				if self.imagewidth is not None:
-					detect_fov=cv2.resize(detect_fov,(self.imagewidth,int(detect_fov.shape[0]*self.imagewidth/detect_fov.shape[1])),interpolation=cv2.INTER_AREA)
+				detect_fov=np.uint8(exposure.rescale_intensity(detect_image[int(h*fov_dim):min(int((h+1)*fov_dim),height),int(w*fov_dim):min(int((w+1)*fov_dim),width)],out_range=(0,255)))
 				analysis_fovs={}
 				for c in analysis_channels:
 					if self.lif:
