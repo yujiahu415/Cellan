@@ -217,7 +217,6 @@ class WindowLv2_GenerateImages(wx.Frame):
 		self.path_to_files=None
 		self.result_path=None
 		self.fov_dim=1280
-		self.imagewidth=None
 		self.black_background=True
 
 		self.dispaly_window()
@@ -302,22 +301,16 @@ class WindowLv2_GenerateImages(wx.Frame):
 		else:
 			self.fov_dim=1280
 		dialog.Destroy()
+		if self.fov_dim<128:
+			self.fov_dim=128
 
 		dialog=wx.MessageDialog(self,'Is the background in the images black/darker?','Darker background?',wx.YES_NO|wx.ICON_QUESTION)
 		if dialog.ShowModal()==wx.ID_YES:
-			dialog1=wx.NumberEntryDialog(self,'Enter the desired image width','The unit is pixel:','Desired image width',640,1,2048)
-			if dialog1.ShowModal()==wx.ID_OK:
-				self.imagewidth=int(dialog1.GetValue())
-				if self.imagewidth<128:
-					self.imagewidth=128
-				self.text_fov.SetLabel('The dimension of one field of view is : '+str(self.fov_dim)' X '+str(self.fov_dim)+' (resize to '+str(self.imagewidth)+').')
-			else:
-				self.imagewidth=None
-				self.text_fov.SetLabel('The height and width of an image will be divided by : '+str(self.fov_dim)+' (No resizing of fov).')
-			dialog1.Destroy()
+			self.black_background=True
+			self.text_fov.SetLabel('The dimension of one field of view : '+str(self.fov_dim)+' X '+str(self.fov_dim)+' (background darker).')
 		else:
-			self.imagewidth=None
-			self.text_fov.SetLabel('The height and width of an image will be divided by : '+str(self.fov_dim)+' (No resizing of fov).')
+			self.black_background=False
+			self.text_fov.SetLabel('The dimension of one field of view : '+str(self.fov_dim)+' X '+str(self.fov_dim)+' (background lighter).')
 		dialog.Destroy()
 
 
@@ -331,7 +324,7 @@ class WindowLv2_GenerateImages(wx.Frame):
 
 			print('Generating image examples...')
 			for i in self.path_to_files:
-				extract_images(i,self.result_path,self.fov_dim,imagewidth=self.imagewidth,black_background=self.black_background)
+				extract_images(i,self.result_path,self.fov_dim,black_background=self.black_background)
 			print('Image example generation completed!')
 
 
