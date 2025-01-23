@@ -13,7 +13,7 @@ from skimage import exposure
 
 class AnalyzeCells():
 
-	def __init__(self,path_to_file,results_path,path_to_detector,cell_kinds,detection_threshold=None,expansion=None,fov_div=1,imagewidth=None):
+	def __init__(self,path_to_file,results_path,path_to_detector,cell_kinds,detection_threshold=None,expansion=None,fov_dim=1280):
 
 		self.detector=Detector()
 		self.detector.load(path_to_detector,cell_kinds)
@@ -28,7 +28,7 @@ class AnalyzeCells():
 			self.lif=False
 		os.makedirs(self.results_path,exist_ok=True)
 		self.expansion=expansion
-		self.fov_div=fov_div
+		self.fov_dim=fov_dim
 		self.imagewidth=imagewidth
 
 
@@ -72,8 +72,8 @@ class AnalyzeCells():
 		detect_image=cv2.cvtColor(np.uint8(detect_image),cv2.COLOR_GRAY2BGR)
 		width=detect_image.shape[1]
 		height=detect_image.shape[0]
-		fov_width=int(width/self.fov_div)
-		fov_height=int(height/self.fov_div)
+		fov_width=int(width/self.fov_dim)
+		fov_height=int(height/self.fov_dim)
 
 		if self.imagewidth is not None:
 			calculate_width=self.imagewidth
@@ -81,9 +81,9 @@ class AnalyzeCells():
 			calculate_width=fov_width
 		thickness=max(1,round(calculate_width/960))
 
-		for w in range(self.fov_div):
+		for w in range(self.fov_dim):
 
-			for h in range(self.fov_div):
+			for h in range(self.fov_dim):
 
 				detect_fov=np.uint8(exposure.rescale_intensity(detect_image[h*fov_height:(h+1)*fov_height,w*fov_width:(w+1)*fov_width],out_range=(0,255)))
 				if self.imagewidth is not None:
@@ -193,8 +193,8 @@ class AnalyzeCells():
 		image=imread(self.path_to_file)
 		width=image.shape[1]
 		height=image.shape[0]
-		fov_width=int(width/self.fov_div)
-		fov_height=int(height/self.fov_div)
+		fov_width=int(width/self.fov_dim)
+		fov_height=int(height/self.fov_dim)
 
 		if self.imagewidth is not None:
 			calculate_width=self.imagewidth
@@ -202,9 +202,9 @@ class AnalyzeCells():
 			calculate_width=fov_width
 		thickness=max(1,round(calculate_width/960))
 
-		for w in range(self.fov_div):
+		for w in range(self.fov_dim):
 
-			for h in range(self.fov_div):
+			for h in range(self.fov_dim):
 
 				analysis_fov=image[h*fov_height:(h+1)*fov_height,w*fov_width:(w+1)*fov_width]
 				detect_fov=np.uint8(exposure.rescale_intensity(analysis_fov,out_range=(0,255)))
