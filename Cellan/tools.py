@@ -16,11 +16,15 @@ def extract_images(path_to_file,out_folder,fov_dim,black_background=True):
 		width=image.shape[1]
 		height=image.shape[0]
 		num_w=int(width/fov_dim)
+		if width%fov_dim!=0:
+			num_w+=1
 		num_h=int(height/fov_dim)
+		if height%fov_dim!=0:
+			num_h+=1
 
-		for h in range(num_h+1):
+		for h in range(num_h):
 
-			for w in range(num_w+1):
+			for w in range(num_w):
 
 				fov=np.uint8(exposure.rescale_intensity(image[int(h*fov_dim):min(int((h+1)*fov_dim),height),int(w*fov_dim):min(int((w+1)*fov_dim),width)],out_range=(0,255)))
 				if fov.shape[0]<fov_dim or fov.shape[1]<fov_dim:
@@ -43,11 +47,15 @@ def extract_images(path_to_file,out_folder,fov_dim,black_background=True):
 		else:
 			c_list=[0,1,2]
 		num_w=int(width/fov_dim)
+		if width%fov_dim!=0:
+			num_w+=1
 		num_h=int(height/fov_dim)
+		if height%fov_dim!=0:
+			num_h+=1
 
-		for h in range(num_h+1):
+		for h in range(num_h):
 
-			for w in range(num_w+1):
+			for w in range(num_w):
 
 				if c_list is None:
 					fov=np.uint8(exposure.rescale_intensity(image[int(h*fov_dim):min(int((h+1)*fov_dim),height),int(w*fov_dim):min(int((w+1)*fov_dim),width)],out_range=(0,255)))
@@ -79,13 +87,17 @@ def extract_images(path_to_file,out_folder,fov_dim,black_background=True):
 		width=image.shape[2]
 		height=image.shape[1]
 		num_w=int(width/fov_dim)
+		if width%fov_dim!=0:
+			num_w+=1
 		num_h=int(height/fov_dim)
+		if height%fov_dim!=0:
+			num_h+=1
 
 		for c in c_list:
 
-			for h in range(num_h+1):
+			for h in range(num_h):
 
-				for w in range(num_w+1):
+				for w in range(num_w):
 
 					fov=np.uint8(exposure.rescale_intensity(image[c,int(h*fov_dim):min(int((h+1)*fov_dim),height),int(w*fov_dim):min(int((w+1)*fov_dim),width)],out_range=(0,255)))
 					if fov.shape[0]<fov_dim or fov.shape[1]<fov_dim:
@@ -108,11 +120,15 @@ def extract_images(path_to_file,out_folder,fov_dim,black_background=True):
 		width=image.shape[1]
 		height=image.shape[0]
 		num_w=int(width/fov_dim)
+		if width%fov_dim!=0:
+			num_w+=1
 		num_h=int(height/fov_dim)
+		if height%fov_dim!=0:
+			num_h+=1
 
-		for h in range(num_h+1):
+		for h in range(num_h):
 
-			for w in range(num_w+1):
+			for w in range(num_w):
 
 				for c in range(len(c_list)):
 
