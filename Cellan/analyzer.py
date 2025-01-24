@@ -206,13 +206,17 @@ class AnalyzeCells():
 		width=image.shape[1]
 		height=image.shape[0]
 		num_w=int(width/self.fov_dim)
+		if width%self.fov_dim!=0:
+			num_w+=1
 		num_h=int(height/self.fov_dim)
+		if height%self.fov_dim!=0:
+			num_h+=1
 
 		thickness=max(1,round(self.fov_dim/960))
 
-		for h in range(num_h+1):
+		for h in range(num_h):
 
-			for w in range(num_w+1):
+			for w in range(num_w):
 
 				analysis_fov=image[int(h*self.fov_dim):min(int((h+1)*self.fov_dim),height),int(w*self.fov_dim):min(int((w+1)*self.fov_dim),width)]
 				detect_fov=np.uint8(exposure.rescale_intensity(analysis_fov,out_range=(0,255)))
