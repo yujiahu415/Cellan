@@ -518,7 +518,6 @@ class WindowLv2_ProcessImages(wx.Frame):
 			print('Start to preprocess image(s)...')
 
 			for i in self.path_to_images:
-
 				preprocess_image(i,self.result_path,self.imagewidth,enhance_contrast=self.enhance_contrast,contrast=self.contrast,
 					crop_image=self.crop_image,left=self.left,right=self.right,top=self.top,bottom=self.bottom,gray_scale=self.gray_scale)
 
