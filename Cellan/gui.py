@@ -410,25 +410,21 @@ class WindowLv2_ProcessImages(wx.Frame):
 
 		else:
 
-			capture=cv2.VideoCapture(self.path_to_videos[0])
-			while True:
-				retval,frame=capture.read()
-				break
-			capture.release()
+			image=cv2.imread(self.path_to_images[0])
 
-			if self.framewidth is not None:
-				frame=cv2.resize(frame,(self.framewidth,int(frame.shape[0]*self.framewidth/frame.shape[1])),interpolation=cv2.INTER_AREA)
+			if self.imagewidth is not None:
+				image=cv2.resize(image,(self.imagewidth,int(image.shape[0]*self.imagewidth/image.shape[1])),interpolation=cv2.INTER_AREA)
 			
-			canvas=np.copy(frame)
-			h,w=frame.shape[:2]
+			canvas=np.copy(image)
+			h,w=image.shape[:2]
 			for y in range(0,h,50):
 				cv2.line(canvas,(0,y),(w,y),(255,0,255),1)
 				cv2.putText(canvas,str(y),(5,y+15),cv2.FONT_HERSHEY_SIMPLEX,0.5,(255,0,255),1)
 			for x in range(0,w,50):
 				cv2.line(canvas,(x,0),(x,h),(255,0,255),1)
 				cv2.putText(canvas,str(x),(x+5,15),cv2.FONT_HERSHEY_SIMPLEX,0.5,(255,0,255),1)
-			cv2.namedWindow('The first frame in coordinates',cv2.WINDOW_NORMAL)
-			cv2.imshow('The first frame in coordinates',canvas)
+			cv2.namedWindow('The first image in coordinates',cv2.WINDOW_NORMAL)
+			cv2.imshow('The first image in coordinates',canvas)
 
 			stop=False
 			while stop is False:
@@ -441,20 +437,20 @@ class WindowLv2_ProcessImages(wx.Frame):
 							self.right=int(coordinates[1])
 							self.top=int(coordinates[2])
 							self.bottom=int(coordinates[3])
-							self.crop_frame=True
+							self.crop_image=True
 							stop=True
-							self.text_cropframe.SetLabel('The cropping window is from left: '+str(self.left)+' to right: '+str(self.right)+', from top: '+str(self.top)+' to bottom: '+str(self.bottom)+'.')
+							self.text_cropimage.SetLabel('The cropping window is from left: '+str(self.left)+' to right: '+str(self.right)+', from top: '+str(self.top)+' to bottom: '+str(self.bottom)+'.')
 						except:
-							self.crop_frame=False
+							self.crop_image=False
 							wx.MessageBox('Please enter 4 integers.','Error',wx.OK|wx.ICON_ERROR)
-							self.text_cropframe.SetLabel('Not to crop the frames')
+							self.text_cropimage.SetLabel('Not to crop the images')
 					else:
-						self.crop_frame=False
+						self.crop_image=False
 						wx.MessageBox('Please enter the coordinates (integers) in correct format.','Error',wx.OK|wx.ICON_ERROR)
-						self.text_cropframe.SetLabel('Not to crop the frames')
+						self.text_cropimage.SetLabel('Not to crop the images')
 				else:
-					self.crop_frame=False
-					self.text_cropframe.SetLabel('Not to crop the frames')
+					self.crop_image=False
+					self.text_cropimage.SetLabel('Not to crop the images')
 					stop=True
 				dialog.Destroy()
 
@@ -469,14 +465,10 @@ class WindowLv2_ProcessImages(wx.Frame):
 
 		else:
 
-			capture=cv2.VideoCapture(self.path_to_videos[0])
-			while True:
-				retval,frame=capture.read()
-				break
-			capture.release()
+			image=cv2.imread(self.path_to_images[0])
 
-			if self.framewidth is not None:
-				frame=cv2.resize(frame,(self.framewidth,int(frame.shape[0]*self.framewidth/frame.shape[1])),interpolation=cv2.INTER_AREA)
+			if self.imagewidth is not None:
+				image=cv2.resize(image,(self.imagewidth,int(image.shape[0]*self.imagewidth/image.shape[1])),interpolation=cv2.INTER_AREA)
 
 			stop=False
 			while stop is False:
