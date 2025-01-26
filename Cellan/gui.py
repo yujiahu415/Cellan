@@ -473,19 +473,19 @@ class WindowLv2_ProcessImages(wx.Frame):
 			stop=False
 			while stop is False:
 				cv2.destroyAllWindows()
-				cv2.namedWindow('The first frame in coordinates',cv2.WINDOW_NORMAL)
-				cv2.imshow('The first frame in coordinates',frame)
+				cv2.namedWindow('The first image in coordinates',cv2.WINDOW_NORMAL)
+				cv2.imshow('The first image in coordinates',image)
 				dialog=wx.TextEntryDialog(self,'Enter the fold changes for contrast enhancement','A number between 1.0~5.0')
 				if dialog.ShowModal()==wx.ID_OK:
 					contrast=dialog.GetValue()
 					try:
 						self.contrast=float(contrast)
-						show_frame=frame*self.contrast
-						show_frame[show_frame>255]=255
-						show_frame=np.uint8(show_frame)
+						show_image=image*self.contrast
+						show_image[show_image>255]=255
+						show_image=np.uint8(show_image)
 						cv2.destroyAllWindows()
-						cv2.namedWindow('The first frame in coordinates',cv2.WINDOW_NORMAL)
-						cv2.imshow('The first frame in coordinates',show_frame)
+						cv2.namedWindow('The first image in coordinates',cv2.WINDOW_NORMAL)
+						cv2.imshow('The first image in coordinates',show_image)
 						dialog1=wx.MessageDialog(self,'Apply the current contrast value?','Apply value?',wx.YES_NO|wx.ICON_QUESTION)
 						if dialog1.ShowModal()==wx.ID_YES:
 							stop=True
@@ -507,32 +507,20 @@ class WindowLv2_ProcessImages(wx.Frame):
 			cv2.destroyAllWindows()
 
 
+	def preprocess_images(self,event):
 
+		if self.path_to_images is None or self.result_path is None:
 
-
-	def preprocess_videos(self,event):
-
-		if self.path_to_videos is None or self.result_path is None:
-
-			wx.MessageBox('No input video(s) / output folder.','Error',wx.OK|wx.ICON_ERROR)
+			wx.MessageBox('No input image(s) / output folder.','Error',wx.OK|wx.ICON_ERROR)
 
 		else:
 
-			print('Start to preprocess video(s)...')
+			print('Start to preprocess image(s)...')
 
-			for i in self.path_to_videos:
+			for i in self.path_to_images:
 
-				if self.decode_t:
-					self.time_windows=[]
-					filename=os.path.splitext(os.path.basename(i))[0].split('_')
-					starttime_windows=[x[2:] for x in filename if len(x)>2 and x[:2]=='st']
-					endtime_windows=[x[2:] for x in filename if len(x)>2 and x[:2]=='ed']
-					for x,startt in enumerate(starttime_windows):
-						self.time_windows.append([startt,endtime_windows[x]])
-
-				preprocess_video(i,self.result_path,self.framewidth,trim_video=self.trim_video,time_windows=self.time_windows,
-					enhance_contrast=self.enhance_contrast,contrast=self.contrast,
-					crop_frame=self.crop_frame,left=self.left,right=self.right,top=self.top,bottom=self.bottom,fps_new=self.fps_new)
+				preprocess_image(i,self.result_path,self.imagewidth,enhance_contrast=self.enhance_contrast,contrast=self.contrast,
+					crop_image=self.crop_image,left=self.left,right=self.right,top=self.top,bottom=self.bottom,gray_scale=self.gray_scale)
 
 			print('Preprocessing completed!')
 
