@@ -8,7 +8,7 @@ import json
 import shutil
 from .analyzer import AnalyzeCells
 from .detector import Detector
-from .tools import extract_images
+from .tools import extract_images,preprocess_image
 from Cellan import __version__
 
 
