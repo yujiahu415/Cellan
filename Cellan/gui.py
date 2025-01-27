@@ -474,10 +474,20 @@ class WindowLv2_ProcessImages(wx.Frame):
 
 		else:
 
-			image=cv2.imread(self.path_to_images[0])
+			extension=os.path.splitext(os.path.basename(self.path_to_images[0]))[1]
+
+			if extension in ['.svs','.SVS']:
+				image=cv2.imread(self.path_to_images[0])
 
 			if self.imagewidth is not None:
 				image=cv2.resize(image,(self.imagewidth,int(image.shape[0]*self.imagewidth/image.shape[1])),interpolation=cv2.INTER_AREA)
+
+			if self.gray_scale:
+				if extension in ['.svs','.SVS']:
+					image=cv2.cvtColor(image,cv2.COLOR_RGB2GRAY)
+					image=cv2.cvtColor(image,cv2.COLOR_GRAY2RGB)
+
+			image=cv2.cvtColor(image,cv2.COLOR_RGB2BGR)
 
 			stop=False
 			while stop is False:
