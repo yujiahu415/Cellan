@@ -203,6 +203,7 @@ class AnalyzeCells():
 			cell_intensities[cell_name]=[]
 
 		image=imread(self.path_to_file)
+		image=cv2.cvtColor(image,cv2.COLOR_RBG2BGR)
 		width=image.shape[1]
 		height=image.shape[0]
 		num_w=int(width/self.fov_dim)
