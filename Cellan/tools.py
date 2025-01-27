@@ -157,6 +157,11 @@ def preprocess_image(path_to_image,out_folder,imagewidth,enhance_contrast=True,c
 	else:
 		width=image.shape[1]
 		height=image.shape[0]
+
+	if gray_scale:
+		if extension in ['.svs','.SVS']:
+			image=cv2.cvtColor(image,cv2.COLOR_RGB2GRAY)
+			image=cv2.cvtColor(image,cv2.COLOR_GRAY2RGB)
 	
 	if imagewidth is not None:
 		w_resize=int(imagewidth)
@@ -175,6 +180,9 @@ def preprocess_image(path_to_image,out_folder,imagewidth,enhance_contrast=True,c
 
 	image=np.uint8(image)
 
-	imwrite(os.path.join(out_folder,name+'_processed.tif'),image)
+	if extension in ['.svs','.SVS']:
+		imwrite(os.path.join(out_folder,name+'_processed.tif'),image,photometric='rgb')
+	else:
+		pass
 
 	print('The processed image(s) stored in: '+out_folder)
