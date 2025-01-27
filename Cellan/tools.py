@@ -144,3 +144,25 @@ def extract_images(path_to_file,out_folder,fov_dim,black_background=True):
 					imwrite(os.path.join(out_folder,os.path.splitext(os.path.basename(path_to_file))[0]+'_'+str(w)+str(h)+'_c'+str(c)+'.jpg'),fov)
 
 
+def preprocess_image(path_to_image,out_folder,imagewidth,enhance_contrast=True,contrast=1.0,crop_image=True,left=0,right=0,top=0,bottom=0,gray_scale=False):
+
+	image=cv2.imread(path_to_image)
+	name=os.path.basename(path_to_image).split('.')[0]
+	width=image.shape[1]
+	height=image.shape[0]
+
+	if imagewidth is not None:
+		w_resize=int(imagewidth)
+		h_resize=int(imagewidth*height/width)
+		image=cv2.resize(image,(w_resize,h_resize),interpolation=cv2.INTER_AREA)
+
+	if crop_image:
+		image=image[top:bottom,left:right,:]
+
+	if enhance_contrast:
+		image=image*contrast
+		image[image>255]=255
+
+	image=np.uint8(image)
+
+	print('The processed image(s) stored in: '+out_folder)
