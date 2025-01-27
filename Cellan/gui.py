@@ -270,7 +270,7 @@ class WindowLv2_ProcessImages(wx.Frame):
 		super(WindowLv2_ProcessImages,self).__init__(parent=None,title=title,size=(1000,400))
 		self.path_to_images=None
 		self.gray_scale=False
-		self.imagewidth=None
+		self.downsize_factor=None
 		self.result_path=None
 		self.enhance_contrast=False
 		self.contrast=1.0
@@ -384,22 +384,22 @@ class WindowLv2_ProcessImages(wx.Frame):
 
 	def downsize_images(self,event):
 
-		dialog=wx.MessageDialog(self,'Proportional resize the images?','Resize the frames?',wx.YES_NO|wx.ICON_QUESTION)
+		dialog=wx.MessageDialog(self,'Proportional downsize the images?','Downsize the images?',wx.YES_NO|wx.ICON_QUESTION)
 
 		if dialog.ShowModal()==wx.ID_YES:
-			dialog1=wx.NumberEntryDialog(self,'Enter the desired image width','The unit is pixel:','Desired image width',2048,1,1000000000)
+			dialog1=wx.NumberEntryDialog(self,'Enter the desired downsizing factor %','A number between 1 and 99 (%):','Desired downsizing factor %',50,1,99)
 			if dialog1.ShowModal()==wx.ID_OK:
-				self.imagewidth=int(dialog1.GetValue())
-				if self.imagewidth<128:
-					self.imagewidth=128
-				self.text_downsizeimages.SetLabel('Proportionally resize imagewidth to '+str(self.imagewidth)+'.')
+				self.downsize_factor=int(dialog1.GetValue())
+				if self.downsize_factor<128:
+					self.downsize_factor=128
+				self.text_downsizeimages.SetLabel('Proportionally downsize image to '+str(self.downsize_factor)+'%.')
 			else:
-				self.imagewidth=None
-				self.text_downsizeimages.SetLabel('Not to resize images.')
+				self.downsize_factor=None
+				self.text_downsizeimages.SetLabel('Not to downsize images.')
 			dialog1.Destroy()
 		else:
-			self.imagewidth=None
-			self.text_downsizeimages.SetLabel('Not to resize images.')
+			self.downsize_factor=None
+			self.text_downsizeimages.SetLabel('Not to downsize images.')
 
 		dialog.Destroy()
 
@@ -417,8 +417,8 @@ class WindowLv2_ProcessImages(wx.Frame):
 			if extension in ['.svs','.SVS']:
 				image=imread(self.path_to_images[0])
 
-			if self.imagewidth is not None:
-				image=cv2.resize(image,(self.imagewidth,int(image.shape[0]*self.imagewidth/image.shape[1])),interpolation=cv2.INTER_AREA)
+			if self.downsize_factor is not None:
+				image=cv2.resize(image,(self.downsize_factor,int(image.shape[0]*self.downsize_factor/image.shape[1])),interpolation=cv2.INTER_AREA)
 
 			if self.gray_scale:
 				if extension in ['.svs','.SVS']:
@@ -480,8 +480,8 @@ class WindowLv2_ProcessImages(wx.Frame):
 			if extension in ['.svs','.SVS']:
 				image=imread(self.path_to_images[0])
 
-			if self.imagewidth is not None:
-				image=cv2.resize(image,(self.imagewidth,int(image.shape[0]*self.imagewidth/image.shape[1])),interpolation=cv2.INTER_AREA)
+			if self.downsize_factor is not None:
+				image=cv2.resize(image,(self.downsize_factor,int(image.shape[0]*self.downsize_factor/image.shape[1])),interpolation=cv2.INTER_AREA)
 
 			if self.gray_scale:
 				if extension in ['.svs','.SVS']:
@@ -538,7 +538,7 @@ class WindowLv2_ProcessImages(wx.Frame):
 			print('Start to preprocess image(s)...')
 
 			for i in self.path_to_images:
-				preprocess_image(i,self.result_path,self.imagewidth,enhance_contrast=self.enhance_contrast,contrast=self.contrast,
+				preprocess_image(i,self.result_path,self.downsize_factor,enhance_contrast=self.enhance_contrast,contrast=self.contrast,
 					crop_image=self.crop_image,left=self.left,right=self.right,top=self.top,bottom=self.bottom,gray_scale=self.gray_scale)
 
 			print('Preprocessing completed!')
