@@ -144,7 +144,7 @@ def extract_images(path_to_file,out_folder,fov_dim,black_background=True):
 					imwrite(os.path.join(out_folder,os.path.splitext(os.path.basename(path_to_file))[0]+'_'+str(w)+str(h)+'_c'+str(c)+'.jpg'),fov)
 
 
-def preprocess_image(path_to_image,out_folder,imagewidth,enhance_contrast=True,contrast=1.0,crop_image=True,left=0,right=0,top=0,bottom=0,gray_scale=False):
+def preprocess_image(path_to_image,out_folder,downsize_factor,enhance_contrast=True,contrast=1.0,crop_image=True,left=0,right=0,top=0,bottom=0,gray_scale=False):
 
 	name=os.path.basename(path_to_image).split('.')[0]
 	extension=os.path.splitext(os.path.basename(path_to_image))[1]
@@ -163,9 +163,9 @@ def preprocess_image(path_to_image,out_folder,imagewidth,enhance_contrast=True,c
 			image=cv2.cvtColor(image,cv2.COLOR_RGB2GRAY)
 			image=cv2.cvtColor(image,cv2.COLOR_GRAY2RGB)
 	
-	if imagewidth is not None:
-		w_resize=int(imagewidth)
-		h_resize=int(imagewidth*height/width)
+	if downsize_factor is not None:
+		w_resize=int(downsize_factor)
+		h_resize=int(downsize_factor*height/width)
 		if extension in ['.qptiff','.QPTIFF']:
 			pass
 		else:
