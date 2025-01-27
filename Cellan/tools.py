@@ -146,7 +146,11 @@ def extract_images(path_to_file,out_folder,fov_dim,black_background=True):
 
 def preprocess_image(path_to_image,out_folder,imagewidth,enhance_contrast=True,contrast=1.0,crop_image=True,left=0,right=0,top=0,bottom=0,gray_scale=False):
 
-	image=cv2.imread(path_to_image)
+	if os.path.splitext(os.path.basename(path_to_file))[1] in ['.svs','.SVS']:
+
+		image=imread(path_to_file)
+
+
 	name=os.path.basename(path_to_image).split('.')[0]
 	width=image.shape[1]
 	height=image.shape[0]
@@ -164,5 +168,7 @@ def preprocess_image(path_to_image,out_folder,imagewidth,enhance_contrast=True,c
 		image[image>255]=255
 
 	image=np.uint8(image)
+
+	imwrite(os.path.join(out_folder,os.path.splitext(os.path.basename(path_to_file))[0]+'_'+str(w)+str(h)+'_c'+str(c)+'.jpg'),fov)
 
 	print('The processed image(s) stored in: '+out_folder)
