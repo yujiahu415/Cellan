@@ -444,7 +444,7 @@ class WindowLv2_ProcessImages(wx.Frame):
 				interval_h=50
 				scale_h=0.5
 				thickness_h=1
-				edge_h=25
+				edge_h=10
 			if w>10000:
 				interval_w=500
 				scale_w=4
@@ -464,7 +464,7 @@ class WindowLv2_ProcessImages(wx.Frame):
 				interval_w=50
 				scale_w=0.5
 				thickness_w=1
-				edge_w=25
+				edge_w=10
 			for y in range(0,h,interval_h):
 				cv2.line(canvas,(0,y),(w,y),(255,0,255),thickness_h)
 				cv2.putText(canvas,str(y),(edge_h,y+edge_h),cv2.FONT_HERSHEY_SIMPLEX,scale_h,(255,0,255),thickness_h)
