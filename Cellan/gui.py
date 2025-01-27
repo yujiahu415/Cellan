@@ -390,8 +390,6 @@ class WindowLv2_ProcessImages(wx.Frame):
 			dialog1=wx.NumberEntryDialog(self,'Enter the desired downsizing factor %','A number between 1 and 99 (%):','Desired downsizing factor %',50,1,99)
 			if dialog1.ShowModal()==wx.ID_OK:
 				self.downsize_factor=int(dialog1.GetValue())
-				if self.downsize_factor<128:
-					self.downsize_factor=128
 				self.text_downsizeimages.SetLabel('Proportionally downsize image to '+str(self.downsize_factor)+'%.')
 			else:
 				self.downsize_factor=None
@@ -418,7 +416,7 @@ class WindowLv2_ProcessImages(wx.Frame):
 				image=imread(self.path_to_images[0])
 
 			if self.downsize_factor is not None:
-				image=cv2.resize(image,(self.downsize_factor,int(image.shape[0]*self.downsize_factor/image.shape[1])),interpolation=cv2.INTER_AREA)
+				image=cv2.resize(image,(int(image.shape[0]*self.downsize_factor/100),int(image.shape[1]*self.downsize_factor/100)),interpolation=cv2.INTER_AREA)
 
 			if self.gray_scale:
 				if extension in ['.svs','.SVS']:
@@ -481,7 +479,7 @@ class WindowLv2_ProcessImages(wx.Frame):
 				image=imread(self.path_to_images[0])
 
 			if self.downsize_factor is not None:
-				image=cv2.resize(image,(self.downsize_factor,int(image.shape[0]*self.downsize_factor/image.shape[1])),interpolation=cv2.INTER_AREA)
+				image=cv2.resize(image,(int(image.shape[0]*self.downsize_factor/100),int(image.shape[1]*self.downsize_factor/100)),interpolation=cv2.INTER_AREA)
 
 			if self.gray_scale:
 				if extension in ['.svs','.SVS']:
