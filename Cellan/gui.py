@@ -1,5 +1,6 @@
 import os
 import cv2
+import numpy as np
 import wx
 import wx.lib.agw.hyperlink as hl
 from pathlib import Path
@@ -477,7 +478,7 @@ class WindowLv2_ProcessImages(wx.Frame):
 			extension=os.path.splitext(os.path.basename(self.path_to_images[0]))[1]
 
 			if extension in ['.svs','.SVS']:
-				image=cv2.imread(self.path_to_images[0])
+				image=imread(self.path_to_images[0])
 
 			if self.imagewidth is not None:
 				image=cv2.resize(image,(self.imagewidth,int(image.shape[0]*self.imagewidth/image.shape[1])),interpolation=cv2.INTER_AREA)
