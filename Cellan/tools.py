@@ -34,7 +34,7 @@ def extract_images(path_to_file,out_folder,fov_dim,black_background=True):
 						background=np.uint8(np.ones((fov_dim,fov_dim,3),dtype='uint8')*255)
 					background[:fov.shape[0],:fov.shape[1]]=fov
 					fov=background
-				imwrite(os.path.join(out_folder,os.path.splitext(os.path.basename(path_to_file))[0]+'_'+str(w)+str(h)+'.jpg'),fov,metadata=None)
+				imwrite(os.path.join(out_folder,os.path.splitext(os.path.basename(path_to_file))[0]+'_'+str(w)+str(h)+'.jpg'),fov,metadata=None,compression='lzw')
 
 	elif os.path.splitext(os.path.basename(path_to_file))[1] in ['.tif','.TIF','.tiff','.TIFF']:
 
@@ -77,7 +77,7 @@ def extract_images(path_to_file,out_folder,fov_dim,black_background=True):
 								background=np.uint8(np.ones((fov_dim,fov_dim,3),dtype='uint8')*255)
 							background[:fov.shape[0],:fov.shape[1]]=fov
 							fov=background
-						imwrite(os.path.join(out_folder,os.path.splitext(os.path.basename(path_to_file))[0]+'_'+str(w)+str(h)+'_c'+str(c)+'.jpg'),fov,metadata=None)
+						imwrite(os.path.join(out_folder,os.path.splitext(os.path.basename(path_to_file))[0]+'_'+str(w)+str(h)+'_c'+str(c)+'.jpg'),fov,metadata=None,compression='lzw')
 
 	elif os.path.splitext(os.path.basename(path_to_file))[1] in ['.qptiff','.QPTIFF']:
 
@@ -107,7 +107,7 @@ def extract_images(path_to_file,out_folder,fov_dim,black_background=True):
 							background=np.uint8(np.ones((fov_dim,fov_dim),dtype='uint8')*255)
 						background[:fov.shape[0],:fov.shape[1]]=fov
 						fov=background
-					imwrite(os.path.join(out_folder,os.path.splitext(os.path.basename(path_to_file))[0]+'_'+str(w)+str(h)+'_c'+str(c)+'.jpg'),fov,metadata=None)
+					imwrite(os.path.join(out_folder,os.path.splitext(os.path.basename(path_to_file))[0]+'_'+str(w)+str(h)+'_c'+str(c)+'.jpg'),fov,metadata=None,compression='lzw')
 
 	else:
 
@@ -141,7 +141,7 @@ def extract_images(path_to_file,out_folder,fov_dim,black_background=True):
 							background=np.uint8(np.ones((fov_dim,fov_dim),dtype='uint8')*255)
 						background[:fov.shape[0],:fov.shape[1]]=fov
 						fov=background
-					imwrite(os.path.join(out_folder,os.path.splitext(os.path.basename(path_to_file))[0]+'_'+str(w)+str(h)+'_c'+str(c)+'.jpg'),fov,metadata=None)
+					imwrite(os.path.join(out_folder,os.path.splitext(os.path.basename(path_to_file))[0]+'_'+str(w)+str(h)+'_c'+str(c)+'.jpg'),fov,metadata=None,compression='lzw')
 
 
 def preprocess_image(path_to_image,out_folder,downsize_factor,enhance_contrast=True,contrast=1.0,crop_image=True,left=0,right=0,top=0,bottom=0,gray_scale=False):
