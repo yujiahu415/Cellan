@@ -164,12 +164,10 @@ def preprocess_image(path_to_image,out_folder,downsize_factor,enhance_contrast=T
 			image=cv2.cvtColor(image,cv2.COLOR_GRAY2RGB)
 	
 	if downsize_factor is not None:
-		w_resize=int(downsize_factor)
-		h_resize=int(downsize_factor*height/width)
 		if extension in ['.qptiff','.QPTIFF']:
 			pass
 		else:
-			image=cv2.resize(image,(w_resize,h_resize),interpolation=cv2.INTER_AREA)
+			image=cv2.resize(image,(int(width*downsize_factor/100),int(height*downsize_factor/100)),interpolation=cv2.INTER_AREA)
 
 	if crop_image:
 		image=image[top:bottom,left:right,:]
