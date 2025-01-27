@@ -425,7 +425,12 @@ class WindowLv2_ProcessImages(wx.Frame):
 			
 			canvas=np.copy(cv2.cvtColor(image,cv2.COLOR_RGB2BGR))
 			h,w=image.shape[:2]
-			if h>5000:
+			if h>10000:
+				interval_h=1000
+				scale_h=4
+				thickness_h=8
+				edge_h=200
+			elif h>5000:
 				interval_h=500
 				scale_h=3
 				thickness_h=5
@@ -433,14 +438,19 @@ class WindowLv2_ProcessImages(wx.Frame):
 			elif h>1000:
 				interval_h=200
 				scale_h=2
-				thickness_h=3
+				thickness_h=2
 				edge_h=50
 			else:
 				interval_h=50
-				scale_h=1
+				scale_h=0.5
 				thickness_h=1
 				edge_h=25
-			if w>5000:
+			if w>10000:
+				interval_w=500
+				scale_w=4
+				thickness_w=8
+				edge_w=200
+			elif w>5000:
 				interval_w=500
 				scale_w=3
 				thickness_w=5
@@ -448,11 +458,11 @@ class WindowLv2_ProcessImages(wx.Frame):
 			elif w>1000:
 				interval_w=200
 				scale_w=2
-				thickness_w=3
+				thickness_w=2
 				edge_w=50
 			else:
 				interval_w=50
-				scale_w=1
+				scale_w=0.5
 				thickness_w=1
 				edge_w=25
 			for y in range(0,h,interval_h):
