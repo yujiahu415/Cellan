@@ -425,12 +425,36 @@ class WindowLv2_ProcessImages(wx.Frame):
 			
 			canvas=np.copy(cv2.cvtColor(image,cv2.COLOR_RGB2BGR))
 			h,w=image.shape[:2]
-			for y in range(0,h,50):
-				cv2.line(canvas,(0,y),(w,y),(255,0,255),1)
-				cv2.putText(canvas,str(y),(5,y+15),cv2.FONT_HERSHEY_SIMPLEX,0.5,(255,0,255),1)
-			for x in range(0,w,50):
-				cv2.line(canvas,(x,0),(x,h),(255,0,255),1)
-				cv2.putText(canvas,str(x),(x+5,15),cv2.FONT_HERSHEY_SIMPLEX,0.5,(255,0,255),1)
+			if h>5000:
+				interval_h=500
+				scale_h=3
+				thickness_h=3
+			elif h>1000:
+				interval_h=200
+				scale_h=2
+				thickness_h=2
+			else:
+				interval_h=50
+				scale_h=1
+				thickness_h=1
+			if w>5000:
+				interval_w=500
+				scale_w=3
+				thickness_w=3
+			elif w>1000:
+				interval_w=200
+				scale_w=2
+				thickness_w=2
+			else:
+				interval_w=50
+				scale_w=1
+				thickness_w=1
+			for y in range(0,h,interval_h):
+				cv2.line(canvas,(0,y),(w,y),(255,0,255),interval_h)
+				cv2.putText(canvas,str(y),(50,y+50),cv2.FONT_HERSHEY_SIMPLEX,scale_h,(255,0,255),interval_h)
+			for x in range(0,w,interval_w):
+				cv2.line(canvas,(x,0),(x,h),(255,0,255),interval_w)
+				cv2.putText(canvas,str(x),(x+50,50),cv2.FONT_HERSHEY_SIMPLEX,scale_w,(255,0,255),interval_w)
 			cv2.namedWindow('The first image in coordinates',cv2.WINDOW_NORMAL)
 			cv2.imshow('The first image in coordinates',canvas)
 
