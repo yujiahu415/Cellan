@@ -427,27 +427,27 @@ class WindowLv2_ProcessImages(wx.Frame):
 			h,w=image.shape[:2]
 			if h>5000:
 				interval_h=500
-				scale_h=3
-				thickness_h=3
+				scale_h=2
+				thickness_h=2
 			elif h>1000:
 				interval_h=200
-				scale_h=2
+				scale_h=1
 				thickness_h=2
 			else:
 				interval_h=50
-				scale_h=1
+				scale_h=0.5
 				thickness_h=1
 			if w>5000:
 				interval_w=500
-				scale_w=3
-				thickness_w=3
+				scale_w=2
+				thickness_w=2
 			elif w>1000:
 				interval_w=200
-				scale_w=2
+				scale_w=1
 				thickness_w=2
 			else:
 				interval_w=50
-				scale_w=1
+				scale_w=0.5
 				thickness_w=1
 			for y in range(0,h,interval_h):
 				cv2.line(canvas,(0,y),(w,y),(255,0,255),thickness_h)
