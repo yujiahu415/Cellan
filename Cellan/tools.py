@@ -149,19 +149,22 @@ def preprocess_image(path_to_image,out_folder,imagewidth,enhance_contrast=True,c
 	name=os.path.basename(path_to_image).split('.')[0]
 	extension=os.path.splitext(os.path.basename(path_to_image))[1]
 
-	if extension in ['.svs','.SVS']:
+	image=imread(path_to_image)
 
-		image=imread(path_to_image)
-
-
+	if extension in ['.qptiff','.QPTIFF']:
+		width=image.shape[2]
+		height=image.shape[1]
+	else:
+		width=image.shape[1]
+		height=image.shape[0]
 	
-	width=image.shape[1]
-	height=image.shape[0]
-
 	if imagewidth is not None:
 		w_resize=int(imagewidth)
 		h_resize=int(imagewidth*height/width)
-		image=cv2.resize(image,(w_resize,h_resize),interpolation=cv2.INTER_AREA)
+		if extension in ['.qptiff','.QPTIFF']:
+			pass
+		else:
+			image=cv2.resize(image,(w_resize,h_resize),interpolation=cv2.INTER_AREA)
 
 	if crop_image:
 		image=image[top:bottom,left:right,:]
@@ -172,6 +175,6 @@ def preprocess_image(path_to_image,out_folder,imagewidth,enhance_contrast=True,c
 
 	image=np.uint8(image)
 
-	imwrite(os.path.join(out_folder,name+'_processed'+extension),image)
+	imwrite(os.path.join(out_folder,name+'_processed.tif'),image)
 
 	print('The processed image(s) stored in: '+out_folder)
