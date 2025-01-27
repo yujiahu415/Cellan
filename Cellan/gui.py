@@ -6,6 +6,7 @@ from pathlib import Path
 import matplotlib as mpl
 import json
 import shutil
+from tifffile import imread
 from .analyzer import AnalyzeCells
 from .detector import Detector
 from .tools import extract_images,preprocess_image
@@ -410,12 +411,20 @@ class WindowLv2_ProcessImages(wx.Frame):
 
 		else:
 
-			image=cv2.imread(self.path_to_images[0])
+			extension=os.path.splitext(os.path.basename(self.path_to_images[0]))[1]
+
+			if extension in ['.svs','.SVS']:
+				image=imread(self.path_to_images[0])
 
 			if self.imagewidth is not None:
 				image=cv2.resize(image,(self.imagewidth,int(image.shape[0]*self.imagewidth/image.shape[1])),interpolation=cv2.INTER_AREA)
+
+			if self.gray_scale:
+				if extension in ['.svs','.SVS']:
+					image=cv2.cvtColor(image,cv2.COLOR_RGB2GRAY)
+					image=cv2.cvtColor(image,cv2.COLOR_GRAY2RGB)
 			
-			canvas=np.copy(image)
+			canvas=np.copy(cv2.cvtColor(image,cv2.COLOR_RGB2BGR))
 			h,w=image.shape[:2]
 			for y in range(0,h,50):
 				cv2.line(canvas,(0,y),(w,y),(255,0,255),1)
