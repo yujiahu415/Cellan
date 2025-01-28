@@ -45,7 +45,7 @@ def extract_images(path_to_file,out_folder,fov_dim,black_background=True):
 		if len(list(image.shape))<3:
 			c_list=None
 		else:
-			c_list=[0,1,2]
+			c_list=list(range(image.shape[2]))
 		num_w=int(width/fov_dim)
 		if width%fov_dim!=0:
 			num_w+=1
@@ -83,7 +83,7 @@ def extract_images(path_to_file,out_folder,fov_dim,black_background=True):
 
 		image=imread(path_to_file)
 
-		c_list=[i for i in range(image.shape[0])]
+		c_list=list(range(image.shape[0]))
 		width=image.shape[2]
 		height=image.shape[1]
 		num_w=int(width/fov_dim)
