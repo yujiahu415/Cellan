@@ -267,7 +267,7 @@ class WindowLv2_ProcessImages(wx.Frame):
 
 	def __init__(self,title):
 
-		super(WindowLv2_ProcessImages,self).__init__(parent=None,title=title,size=(1000,400))
+		super(WindowLv2_ProcessImages,self).__init__(parent=None,title=title,size=(1000,350))
 		self.path_to_images=None
 		self.gray_scale=False
 		self.downsize_factor=None
