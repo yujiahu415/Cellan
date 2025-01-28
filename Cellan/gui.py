@@ -291,7 +291,7 @@ class WindowLv2_ProcessImages(wx.Frame):
 		module_inputimages=wx.BoxSizer(wx.HORIZONTAL)
 		button_inputimages=wx.Button(panel,label='Select the image(s)\nfor preprocessing',size=(300,40))
 		button_inputimages.Bind(wx.EVT_BUTTON,self.select_images)
-		wx.Button.SetToolTip(button_inputimages,'Select one or more images. Supported image formats: jpg, png, tif, svs, qptiff.')
+		wx.Button.SetToolTip(button_inputimages,'Select one or more images. Supported file formats: lif, jpg, png, tif, svs, qptiff.')
 		self.text_inputimages=wx.StaticText(panel,label='None.',style=wx.ALIGN_LEFT|wx.ST_ELLIPSIZE_END)
 		module_inputimages.Add(button_inputimages,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
 		module_inputimages.Add(self.text_inputimages,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
@@ -354,7 +354,7 @@ class WindowLv2_ProcessImages(wx.Frame):
 
 	def select_images(self,event):
 
-		wildcard='Image files(*.jpg; *.png; *.tif;*.tiff;*.svs;*.qptiff)|*.jpg;*.JPG;*.png;*.PNG;*.tif;*.TIF;*.tiff;*.TIFF;*.svs;*.SVS;*.qptiff;*.QPTIFF'
+		wildcard='Image files(*.lif;*.jpg;*.png;*.tif;*.tiff;*.svs;*.qptiff)|*.lif;*.LIF;*.jpg;*.JPG;*.png;*.PNG;*.tif;*.TIF;*.tiff;*.TIFF;*.svs;*.SVS;*.qptiff;*.QPTIFF'
 		dialog=wx.FileDialog(self,'Select image(s)','','',wildcard,style=wx.FD_MULTIPLE)
 
 		if dialog.ShowModal()==wx.ID_OK:
