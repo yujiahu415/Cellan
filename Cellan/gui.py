@@ -414,6 +414,8 @@ class WindowLv2_ProcessImages(wx.Frame):
 
 			if extension in ['.svs','.SVS']:
 				image=imread(self.path_to_images[0])
+			elif extension in ['.qptiff','.QPTIFF']:
+				image=imread(self.path_to_images[0])
 
 			if self.downsize_factor is not None:
 				image=cv2.resize(image,(int(image.shape[1]*self.downsize_factor/100),int(image.shape[0]*self.downsize_factor/100)),interpolation=cv2.INTER_AREA)
