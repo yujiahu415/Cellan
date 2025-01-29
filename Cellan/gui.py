@@ -5,9 +5,10 @@ import wx
 import wx.lib.agw.hyperlink as hl
 from pathlib import Path
 import matplotlib as mpl
+import matplotlib.cm as cm
 import json
 import shutil
-from tifffile import imread
+import tifffile
 from .analyzer import AnalyzeCells
 from .detector import Detector
 from .tools import extract_images,preprocess_image
@@ -415,20 +416,39 @@ class WindowLv2_ProcessImages(wx.Frame):
 			if extension in ['.lif','.LIF']:
 				pass
 			else:
-				image=imread(self.path_to_images[0])
+				image=tifffile.imread(self.path_to_images[0])
 
-			
-				
-			elif extension in ['.qptiff','.QPTIFF']:
-				image=imread(self.path_to_images[0])
 
 			if self.downsize_factor is not None:
-				if extension in ['.svs','.SVS']:
-					image=cv2.resize(image,(int(image.shape[1]*self.downsize_factor/100),int(image.shape[0]*self.downsize_factor/100)),interpolation=cv2.INTER_AREA)
+				if extension in ['.lif','.LIF']:
+					pass
 				elif extension in ['.tif','.TIF','.tiff','.TIFF']:
 					if len(list(image.shape))<3:
 						image=cv2.resize(image,(int(image.shape[1]*self.downsize_factor/100),int(image.shape[0]*self.downsize_factor/100)),interpolation=cv2.INTER_AREA)
 					else:
+						page=tifffile.TiffFile(self.path_to_images[0]).pages[0]
+						num_channels=image.shape[2]
+						lut_available=page.photometric==tifffile.PHOTOMETRIC.PALETTE
+						rgb_channels=[]
+						for c in range(num_channels):
+							if lut_available:
+								lut=page.colormap
+								channel_data=image[...,c]
+								rgb_channel=np.zeros((*image.shape,3),dtype=np.uint8)
+								for i in range(3):
+									rgb_channel[...,i]=lut[i,image]//256
+							else:
+								cmap=cm.rainbow(c/(num_channels-1))
+								rgb_channel=cm.ScalarMappable(cmap=cm.rainbow).to_rgba(image,bytes=True)[:,:,:3]
+							rgb_channels.append(rgb_channel)
+						image=np.mean(rgb_channels,axis=0).astype(np.uint8)
+
+
+
+				elif extension in ['.qptiff','.QPTIFF']:
+					pass
+				else:
+					image=cv2.resize(image,(int(image.shape[1]*self.downsize_factor/100),int(image.shape[0]*self.downsize_factor/100)),interpolation=cv2.INTER_AREA)
 
 			if self.gray_scale:
 				if extension in ['.svs','.SVS']:
@@ -528,7 +548,7 @@ class WindowLv2_ProcessImages(wx.Frame):
 			extension=os.path.splitext(os.path.basename(self.path_to_images[0]))[1]
 
 			if extension in ['.svs','.SVS']:
-				image=imread(self.path_to_images[0])
+				image=tifffile.imread(self.path_to_images[0])
 
 			if self.downsize_factor is not None:
 				image=cv2.resize(image,(int(image.shape[1]*self.downsize_factor/100),int(image.shape[0]*self.downsize_factor/100)),interpolation=cv2.INTER_AREA)
