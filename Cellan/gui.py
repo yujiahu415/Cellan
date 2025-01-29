@@ -412,13 +412,23 @@ class WindowLv2_ProcessImages(wx.Frame):
 
 			extension=os.path.splitext(os.path.basename(self.path_to_images[0]))[1]
 
-			if extension in ['.svs','.SVS']:
+			if extension in ['.lif','.LIF']:
+				pass
+			else:
 				image=imread(self.path_to_images[0])
+
+			
+				
 			elif extension in ['.qptiff','.QPTIFF']:
 				image=imread(self.path_to_images[0])
 
 			if self.downsize_factor is not None:
-				image=cv2.resize(image,(int(image.shape[1]*self.downsize_factor/100),int(image.shape[0]*self.downsize_factor/100)),interpolation=cv2.INTER_AREA)
+				if extension in ['.svs','.SVS']:
+					image=cv2.resize(image,(int(image.shape[1]*self.downsize_factor/100),int(image.shape[0]*self.downsize_factor/100)),interpolation=cv2.INTER_AREA)
+				elif extension in ['.tif','.TIF','.tiff','.TIFF']:
+					if len(list(image.shape))<3:
+						image=cv2.resize(image,(int(image.shape[1]*self.downsize_factor/100),int(image.shape[0]*self.downsize_factor/100)),interpolation=cv2.INTER_AREA)
+					else:
 
 			if self.gray_scale:
 				if extension in ['.svs','.SVS']:
