@@ -241,14 +241,6 @@ class AnalyzeCells():
 
 				if len(masks)>0:
 
-					mask_area=np.sum(np.array(masks),axis=(1,2))
-					exclusion_mask=np.zeros(len(masks),dtype=bool)
-					exclusion_mask[np.where((np.sum(np.logical_and(masks[:,None],masks),axis=(2,3))/mask_area[:,None]>0.8) & (mask_area[:,None]<mask_area[None,:]))[0]]=True
-					masks=[m for m,exclude in zip(masks,exclusion_mask) if not exclude]
-					classes=[c for c,exclude in zip(classes,exclusion_mask) if not exclude]
-					classes=[self.cell_mapping[str(x)] for x in classes]
-					scores=[s for s,exclude in zip(scores,exclusion_mask) if not exclude]
-
 					for cell_name in self.cell_kinds:
 
 						hex_color=names_colors[cell_name].lstrip('#')
@@ -257,6 +249,11 @@ class AnalyzeCells():
 
 						cell_masks=[masks[a] for a,name in enumerate(classes) if name==cell_name]
 						cell_scores=[scores[a] for a,name in enumerate(classes) if name==cell_name]
+						mask_area=np.sum(np.array(cell_masks),axis=(1,2))
+						exclusion_mask=np.zeros(len(cell_masks),dtype=bool)
+						exclusion_mask[np.where((np.sum(np.logical_and(cell_masks[:,None],cell_masks),axis=(2,3))/mask_area[:,None]>0.8) & (mask_area[:,None]<mask_area[None,:]))[0]]=True
+						cell_masks=[m for m,exclude in zip(cell_masks,exclusion_mask) if not exclude]
+						cell_scores=[s for s,exclude in zip(cell_scores,exclusion_mask) if not exclude]
 
 						if len(cell_masks)>0:
 
