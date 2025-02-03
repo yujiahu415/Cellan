@@ -13,12 +13,13 @@ from skimage import exposure
 
 class AnalyzeCells():
 
-	def __init__(self,path_to_file,results_path,path_to_detector,cell_kinds,detection_threshold=None,expansion=None):
+	def __init__(self,path_to_file,results_path,path_to_detector,cell_kinds,names_colors,detection_threshold=None,expansion=None):
 
 		self.detector=Detector()
 		self.detector.load(path_to_detector,cell_kinds)
 		self.cell_kinds=cell_kinds
 		self.cell_mapping=self.detector.cell_mapping
+		self.names_colors=names_colors
 		self.detection_threshold=detection_threshold
 		self.path_to_file=path_to_file
 		self.results_path=os.path.join(results_path,os.path.splitext(os.path.basename(self.path_to_file))[0])
@@ -32,7 +33,7 @@ class AnalyzeCells():
 		self.black_background=self.detector.black_background
 
 
-	def analyze_multichannels(self,names_colors,detection_channel=0,analysis_channels=[]):
+	def analyze_multichannels(self,detection_channel=0,analysis_channels=[]):
 
 		if self.detection_threshold is None:
 			self.detection_threshold={}
@@ -124,7 +125,7 @@ class AnalyzeCells():
 
 					for cell_name in self.cell_kinds:
 
-						hex_color=names_colors[cell_name].lstrip('#')
+						hex_color=self.names_colors[cell_name].lstrip('#')
 						color=tuple(int(hex_color[i:i+2],16) for i in (0,2,4))
 						color=color[::-1]
 
@@ -182,7 +183,7 @@ class AnalyzeCells():
 		print('Analysis completed!')
 
 
-	def analyze_singlechannel(self,names_colors):
+	def analyze_singlechannel(self):
 
 		if self.detection_threshold is None:
 			self.detection_threshold={}
@@ -242,7 +243,7 @@ class AnalyzeCells():
 
 					for cell_name in self.cell_kinds:
 
-						hex_color=names_colors[cell_name].lstrip('#')
+						hex_color=self.names_colors[cell_name].lstrip('#')
 						color=tuple(int(hex_color[i:i+2],16) for i in (0,2,4))
 						color=color[::-1]
 
