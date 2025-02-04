@@ -304,11 +304,11 @@ class AnalyzeCells():
 			out_sheet=os.path.join(self.results_path,os.path.splitext(os.path.basename(self.path_to_file))[0]+'_'+cell_name+'_summary.xlsx')
 			pd.concat(dfs,axis=1).to_excel(out_sheet,float_format='%.2f',index_label='ID/parameter')
 
-			dfs=[]
-			dfs.append(total_foreground_area)
-			dfs.append(total_cell_area[cell_name])
-			dfs.append(total_cell_area[cell_name]/total_foreground_area)
-			dfs=pd.DataFrame(dfs,columns=['total_area',cell_name+'_area','area_ratio'])
+			dfs={}
+			dfs['total_area']=total_foreground_area
+			dfs[cell_name+'_area']=total_cell_area[cell_name]
+			dfs['area_ratio']=total_cell_area[cell_name]/total_foreground_area
+			dfs=pd.DataFrame(dfs)
 			out_sheet=os.path.join(self.results_path,os.path.splitext(os.path.basename(self.path_to_file))[0]+'_'+cell_name+'_arearatio.xlsx')
 			dfs.to_excel(out_sheet,float_format='%.2f')
 
