@@ -194,12 +194,15 @@ class AnalyzeCells():
 		cell_centers={}
 		cell_areas={}
 		cell_intensities={}
+		total_cell_area={}
+		total_foreground_area=0
 
 		for cell_name in self.cell_kinds:
 			cell_numbers[cell_name]=0
 			cell_centers[cell_name]=[]
 			cell_areas[cell_name]=[]
 			cell_intensities[cell_name]=[]
+			total_cell_area[cell_name]=0
 
 		image=imread(self.path_to_file)
 		image=cv2.cvtColor(image,cv2.COLOR_RGB2BGR)
@@ -231,6 +234,12 @@ class AnalyzeCells():
 					background_detect[:detect_fov.shape[0],:detect_fov.shape[1]]=detect_fov
 					analysis_fov=background_analysis
 					detect_fov=background_detect
+				if self.black_background:
+					area_noholes=np.count_nonzero(cv2.threshold(cv2.cvtColor(analysis_fov,cv2.COLOR_BGR2GRAY),0,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)[1])
+				else:
+					area_noholes=analysis_fov.shape[0]*analysis_fov[1]-np.count_nonzero(cv2.threshold(cv2.cvtColor(analysis_fov,cv2.COLOR_BGR2GRAY),0,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)[1])
+
+				total_foreground_area+=area_noholes
 
 				output=self.detector.inference([{'image':torch.as_tensor(detect_fov.astype('float32').transpose(2,0,1))}])
 				instances=output[0]['instances'].to('cpu')
@@ -278,6 +287,7 @@ class AnalyzeCells():
 										if area>0:
 											cell_intensities[cell_name].append(np.sum(analysis_fov*cv2.cvtColor(mask,cv2.COLOR_GRAY2BGR))/area)
 											cv2.drawContours(to_annotate,[cnt],0,color,thickness)
+											total_cell_area[cell_name]+=area
 										else:
 											cell_intensities[cell_name].append(0)
 
