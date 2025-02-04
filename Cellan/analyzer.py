@@ -237,7 +237,7 @@ class AnalyzeCells():
 				if self.black_background:
 					area_noholes=np.count_nonzero(cv2.threshold(cv2.cvtColor(analysis_fov,cv2.COLOR_BGR2GRAY),0,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)[1])
 				else:
-					area_noholes=analysis_fov.shape[0]*analysis_fov[1]-np.count_nonzero(cv2.threshold(cv2.cvtColor(analysis_fov,cv2.COLOR_BGR2GRAY),0,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)[1])
+					area_noholes=analysis_fov.shape[0]*analysis_fov.shape[1]-np.count_nonzero(cv2.threshold(cv2.cvtColor(analysis_fov,cv2.COLOR_BGR2GRAY),0,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)[1])
 
 				total_foreground_area+=area_noholes
 
