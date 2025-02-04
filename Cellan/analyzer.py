@@ -235,9 +235,9 @@ class AnalyzeCells():
 					analysis_fov=background_analysis
 					detect_fov=background_detect
 				if self.black_background:
-					area_noholes=np.count_nonzero(cv2.threshold(cv2.cvtColor(analysis_fov,cv2.COLOR_BGR2GRAY),0,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)[1])
+					area_noholes=np.count_nonzero(cv2.threshold(cv2.cvtColor(detect_fov,cv2.COLOR_BGR2GRAY),0,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)[1])
 				else:
-					area_noholes=analysis_fov.shape[0]*analysis_fov.shape[1]-np.count_nonzero(cv2.threshold(cv2.cvtColor(analysis_fov,cv2.COLOR_BGR2GRAY),0,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)[1])
+					area_noholes=detect_fov.shape[0]*detect_fov.shape[1]-np.count_nonzero(cv2.threshold(cv2.cvtColor(detect_fov,cv2.COLOR_BGR2GRAY),0,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)[1])
 
 				total_foreground_area+=area_noholes
 
@@ -309,7 +309,7 @@ class AnalyzeCells():
 			dfs['area_ratio']=total_cell_area[cell_name]/total_foreground_area
 			dfs=pd.DataFrame(dfs,index=['value'])
 			out_sheet=os.path.join(self.results_path,os.path.splitext(os.path.basename(self.path_to_file))[0]+'_'+cell_name+'_arearatio.xlsx')
-			dfs.to_excel(out_sheet,float_format='%.2f')
+			dfs.to_excel(out_sheet,float_format='%.6f')
 
 		print('Analysis completed!')
 
