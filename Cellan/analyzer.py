@@ -296,7 +296,6 @@ class AnalyzeCells():
 		for cell_name in self.cell_kinds:
 
 			dfs=[]
-
 			dfs.append(pd.DataFrame([i+1 for i in range(len(cell_centers[cell_name]))],columns=['number']).reset_index(drop=True))
 			dfs.append(pd.DataFrame(cell_centers[cell_name],columns=['center_x','center_y']).reset_index(drop=True))
 			dfs.append(pd.DataFrame(cell_areas[cell_name],columns=['areas']).reset_index(drop=True))
@@ -308,7 +307,7 @@ class AnalyzeCells():
 			dfs['total_area']=total_foreground_area
 			dfs[cell_name+'_area']=total_cell_area[cell_name]
 			dfs['area_ratio']=total_cell_area[cell_name]/total_foreground_area
-			dfs=pd.DataFrame(dfs)
+			dfs=pd.DataFrame(dfs,index=['value'])
 			out_sheet=os.path.join(self.results_path,os.path.splitext(os.path.basename(self.path_to_file))[0]+'_'+cell_name+'_arearatio.xlsx')
 			dfs.to_excel(out_sheet,float_format='%.2f')
 
