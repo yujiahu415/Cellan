@@ -281,12 +281,15 @@ class AnalyzeCells():
 										cnts,_=cv2.findContours((mask*255).astype(np.uint8),cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_NONE)
 										cnt=sorted(cnts,key=cv2.contourArea,reverse=True)[0]
 										goodcontours.append(cnt)
-										cell_centers[cell_name].append((int(cv2.moments(cnt)['m10']/cv2.moments(cnt)['m00'])+int(w*self.fov_dim),int(cv2.moments(cnt)['m01']/cv2.moments(cnt)['m00'])+int(h*self.fov_dim)))
+										cx=int(cv2.moments(cnt)['m10']/cv2.moments(cnt)['m00'])+int(w*self.fov_dim)
+										cy=int(cv2.moments(cnt)['m01']/cv2.moments(cnt)['m00'])+int(h*self.fov_dim)
+										cell_centers[cell_name].append((cx,cy))
 										area=np.sum(np.array(mask),axis=(0,1))
 										cell_areas[cell_name].append(area)
 										if area>0:
 											cell_intensities[cell_name].append(np.sum(analysis_fov*cv2.cvtColor(mask,cv2.COLOR_GRAY2BGR))/area)
 											cv2.drawContours(to_annotate,[cnt],0,color,thickness)
+											cv2.putText(to_annotate,cell_name+' '+str(len(cell_centers[cell_name])),(cx,cy),cv2.FONT_HERSHEY_SIMPLEX,thickness,color,thickness)
 											total_cell_area[cell_name]+=area
 										else:
 											cell_intensities[cell_name].append(0)
