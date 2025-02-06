@@ -289,6 +289,8 @@ class AnalyzeCells():
 										if area>0:
 											cell_intensities[cell_name].append(np.sum(analysis_fov*cv2.cvtColor(mask,cv2.COLOR_GRAY2BGR))/area)
 											cv2.drawContours(to_annotate,[cnt],0,color,thickness)
+											cx-=int(w*self.fov_dim)
+											cy-=int(h*self.fov_dim)
 											cv2.putText(to_annotate,cell_name+' '+str(len(cell_centers[cell_name])),(cx,cy),cv2.FONT_HERSHEY_SIMPLEX,thickness,color,thickness)
 											total_cell_area[cell_name]+=area
 										else:
