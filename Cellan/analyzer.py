@@ -291,7 +291,7 @@ class AnalyzeCells():
 											cv2.drawContours(to_annotate,[cnt],0,color,thickness)
 											cx-=int(w*self.fov_dim)
 											cy-=int(h*self.fov_dim)
-											cv2.putText(to_annotate,cell_name+' '+str(len(cell_centers[cell_name])),(cx,cy),cv2.FONT_HERSHEY_SIMPLEX,thickness,color,thickness)
+											cv2.putText(to_annotate,str(len(cell_centers[cell_name])),(cx,cy),cv2.FONT_HERSHEY_SIMPLEX,thickness,color,thickness)
 											total_cell_area[cell_name]+=area
 										else:
 											cell_intensities[cell_name].append(0)
