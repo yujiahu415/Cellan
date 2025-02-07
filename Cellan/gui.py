@@ -1448,6 +1448,7 @@ class WindowLv2_AnalyzeMultiChannels(wx.Frame):
 		self.detection_channel=0
 		self.analysis_channels=[]
 		self.black_background=True
+		self.show_ids=False
 		
 		self.dispaly_window()
 
@@ -1596,6 +1597,12 @@ class WindowLv2_AnalyzeMultiChannels(wx.Frame):
 					new_color='#%02x%02x%02x'%(r,b,g)
 					self.names_colors[cell_name]=new_color
 				dialog1.Destroy()
+				dialog1=wx.MessageDialog(self,'Show the IDs for each detected cells?','Show IDs?',wx.YES_NO|wx.ICON_QUESTION)
+				if dialog1.ShowModal()==wx.ID_YES:
+					self.show_ids=True
+				else:
+					self.show_ids=False
+				dialog1.Destroy()
 				dialog1=wx.NumberEntryDialog(self,'Detection threshold for '+str(cell_name),'Enter an number between 0 and 100','Detection threshold for '+str(cell_name),0,0,100)
 				if dialog1.ShowModal()==wx.ID_OK:
 					self.detection_threshold[cell_name]=int(dialog1.GetValue())/100
@@ -1648,7 +1655,7 @@ class WindowLv2_AnalyzeMultiChannels(wx.Frame):
 		else:
 
 			for i in self.path_to_files:
-				AC=AnalyzeCells(i,self.result_path,self.path_to_detector,self.cell_kinds,self.names_colors,detection_threshold=self.detection_threshold,expansion=self.expansion)
+				AC=AnalyzeCells(i,self.result_path,self.path_to_detector,self.cell_kinds,self.names_colors,detection_threshold=self.detection_threshold,expansion=self.expansion,show_ids=self.show_ids)
 				AC.analyze_multichannels(detection_channel=self.detection_channel,analysis_channels=self.analysis_channels)
 
 
@@ -1668,6 +1675,7 @@ class WindowLv2_AnalyzeSingleChannel(wx.Frame):
 		self.fov_dim=1280
 		self.names_colors=None
 		self.black_background=True
+		self.show_ids=False
 		
 		self.dispaly_window()
 
@@ -1806,6 +1814,12 @@ class WindowLv2_AnalyzeSingleChannel(wx.Frame):
 					new_color='#%02x%02x%02x'%(r,b,g)
 					self.names_colors[cell_name]=new_color
 				dialog1.Destroy()
+				dialog1=wx.MessageDialog(self,'Show the IDs for each detected cells?','Show IDs?',wx.YES_NO|wx.ICON_QUESTION)
+				if dialog1.ShowModal()==wx.ID_YES:
+					self.show_ids=True
+				else:
+					self.show_ids=False
+				dialog1.Destroy()
 				dialog1=wx.NumberEntryDialog(self,'Detection threshold for '+str(cell_name),'Enter an number between 0 and 100','Detection threshold for '+str(cell_name),0,0,100)
 				if dialog1.ShowModal()==wx.ID_OK:
 					self.detection_threshold[cell_name]=int(dialog1.GetValue())/100
@@ -1836,7 +1850,7 @@ class WindowLv2_AnalyzeSingleChannel(wx.Frame):
 		else:
 
 			for i in self.path_to_files:
-				AC=AnalyzeCells(i,self.result_path,self.path_to_detector,self.cell_kinds,self.names_colors,detection_threshold=self.detection_threshold,expansion=self.expansion)
+				AC=AnalyzeCells(i,self.result_path,self.path_to_detector,self.cell_kinds,self.names_colors,detection_threshold=self.detection_threshold,expansion=self.expansion,show_ids=self.show_ids)
 				AC.analyze_singlechannel()
 
 
