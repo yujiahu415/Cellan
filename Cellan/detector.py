@@ -66,6 +66,7 @@ class Detector():
 		cfg.MODEL.ROI_HEADS.BATCH_SIZE_PER_IMAGE=num_rois
 		cfg.MODEL.ROI_HEADS.NUM_CLASSES=int(len(classnames))
 		cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST=0.5
+		cfg.MODEL.FPN.USE_GN=True
 		cfg.SOLVER.MAX_ITER=int(iteration_num)
 		cfg.SOLVER.BASE_LR=0.001
 		cfg.SOLVER.WARMUP_ITERS=int(iteration_num*0.1)
