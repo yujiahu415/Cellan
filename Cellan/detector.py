@@ -66,14 +66,23 @@ class Detector():
 		cfg.MODEL.ROI_HEADS.BATCH_SIZE_PER_IMAGE=num_rois
 		cfg.MODEL.ROI_HEADS.NUM_CLASSES=int(len(classnames))
 		cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST=0.5
-		cfg.MODEL.FPN.USE_GN=True
+		cfg.MODEL.DEVICE=self.device
+		if cfg.MODEL.DEVICE=='cuda':
+			if torch.cuda.get_device_properties(0).total_memory/1024**3<4:
+				cfg.MODEL.FPN.USE_GN=True
+				cfg.SOLVER.IMS_PER_BATCH=2
+			elif torch.cuda.get_device_properties(0).total_memory/1024**3<8:
+				cfg.MODEL.FPN.USE_GN=True
+				cfg.SOLVER.IMS_PER_BATCH=4
+			else:
+		else:
+			cfg.MODEL.FPN.USE_GN=True
+			cfg.SOLVER.IMS_PER_BATCH=2
 		cfg.SOLVER.MAX_ITER=int(iteration_num)
 		cfg.SOLVER.BASE_LR=0.001
 		cfg.SOLVER.WARMUP_ITERS=int(iteration_num*0.1)
 		cfg.SOLVER.STEPS=(int(iteration_num*0.4),int(iteration_num*0.8))
 		cfg.SOLVER.GAMMA=0.5
-		cfg.SOLVER.IMS_PER_BATCH=4
-		cfg.MODEL.DEVICE=self.device
 		cfg.SOLVER.CHECKPOINT_PERIOD=100000000000000000
 		cfg.INPUT.MIN_SIZE_TEST=int(inference_size)
 		cfg.INPUT.MAX_SIZE_TEST=int(inference_size)
