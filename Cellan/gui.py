@@ -1227,16 +1227,18 @@ class WindowLv2_TrainDetectors(wx.Frame):
 
 		else:
 
-			cell_numbers=['<50','50-200','>200']
-			dialog=wx.SingleChoiceDialog(self,message='How many (approximately) cells of interest per image?',caption='Number of cells',choices=cell_numbers)
+			cell_sizes=['Sparse and large (e.g., large tissue areas)','Median (e.g., structures formed by group of cells)','Small (e.g. typical cell bodies)','Extremely small (e.g., dense subcellular structures)']
+			dialog=wx.SingleChoiceDialog(self,message='How large are the objects to detect\ncompared to the images?',caption='Object size',choices=cell_sizes)
 			if dialog.ShowModal()==wx.ID_OK:
-				cell_number=dialog.GetStringSelection()
-				if cell_number=='<50':
+				cell_size=dialog.GetStringSelection()
+				if cell_size=='Sparse and large (e.g., large tissue areas)':
 					self.num_rois=128
-				elif cell_number=='50-200':
+				elif cell_size=='Median (e.g., structures formed by group of cells)':
 					self.num_rois=256
-				else:
+				elif cell_size=='Small (e.g. typical cell bodies)':
 					self.num_rois=512
+				else:
+					self.num_rois=1024
 			dialog.Destroy()
 
 			images=[i for i in os.listdir(self.path_to_trainingimages) if i.endswith('.jpg')]
