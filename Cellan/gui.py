@@ -1857,6 +1857,90 @@ class WindowLv2_AnalyzeSingleChannel(wx.Frame):
 
 
 
+class WindowLv2_CalculateTotalIntensity(wx.Frame):
+
+	def __init__(self,title):
+
+		super(WindowLv2_CalculateTotalIntensity,self).__init__(parent=None,title=title,size=(1000,200))
+		self.path_to_files=None
+		self.result_path=None
+		
+		self.dispaly_window()
+
+
+	def dispaly_window(self):
+
+		panel=wx.Panel(self)
+		boxsizer=wx.BoxSizer(wx.VERTICAL)
+
+		module_inputfiles=wx.BoxSizer(wx.HORIZONTAL)
+		button_inputfiles=wx.Button(panel,label='Select the LIF/TIF/QPTIFF file(s)\nfor analyzing cells',size=(300,40))
+		button_inputfiles.Bind(wx.EVT_BUTTON,self.select_files)
+		wx.Button.SetToolTip(button_inputfiles,'Select one or more *.LIF or *.TIF or *.QPTIFF file(s).')
+		self.text_inputfiles=wx.StaticText(panel,label='None.',style=wx.ALIGN_LEFT|wx.ST_ELLIPSIZE_END)
+		module_inputfiles.Add(button_inputfiles,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
+		module_inputfiles.Add(self.text_inputfiles,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
+		boxsizer.Add(0,10,0)
+		boxsizer.Add(module_inputfiles,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
+		boxsizer.Add(0,5,0)
+
+		module_outputfolder=wx.BoxSizer(wx.HORIZONTAL)
+		button_outputfolder=wx.Button(panel,label='Select a folder to store\nthe analysis results',size=(300,40))
+		button_outputfolder.Bind(wx.EVT_BUTTON,self.select_outpath)
+		wx.Button.SetToolTip(button_outputfolder,'Will create a subfolder for each file in the selected folder.')
+		self.text_outputfolder=wx.StaticText(panel,label='None.',style=wx.ALIGN_LEFT|wx.ST_ELLIPSIZE_END)
+		module_outputfolder.Add(button_outputfolder,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
+		module_outputfolder.Add(self.text_outputfolder,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
+		boxsizer.Add(module_outputfolder,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
+		boxsizer.Add(0,5,0)
+
+		button_analyze=wx.Button(panel,label='Start to calculate intensity',size=(300,40))
+		button_analyze.Bind(wx.EVT_BUTTON,self.calculate_intensity)
+		wx.Button.SetToolTip(button_analyze,'Will output the numbers, areas, and pixel intensities for each cell of interest.')
+		boxsizer.Add(0,5,0)
+		boxsizer.Add(button_analyze,0,wx.RIGHT|wx.ALIGN_RIGHT,90)
+		boxsizer.Add(0,10,0)
+
+		panel.SetSizer(boxsizer)
+
+		self.Centre()
+		self.Show(True)
+
+
+	def select_files(self,event):
+
+		wildcard='LIF/TIF/QPTIFF files (*.lif/*.tif/*.qptiff)|*.lif;*.LIF;*.tif;*.TIF;*.tiff;*.TIFF;*.qptiff;*.QPTIFF'
+		dialog=wx.FileDialog(self,'Select LIF/TIF/QPTIFF file(s)','','',wildcard,style=wx.FD_MULTIPLE)
+		if dialog.ShowModal()==wx.ID_OK:
+			self.path_to_files=dialog.GetPaths()
+			path=os.path.dirname(self.path_to_files[0])
+			self.text_inputfiles.SetLabel('Selected '+str(len(self.path_to_files))+' file(s) in: '+path+'.')
+		dialog.Destroy()
+
+
+	def select_outpath(self,event):
+
+		dialog=wx.DirDialog(self,'Select a directory','',style=wx.DD_DEFAULT_STYLE)
+		if dialog.ShowModal()==wx.ID_OK:
+			self.result_path=dialog.GetPath()
+			self.text_outputfolder.SetLabel('Results will be in: '+self.result_path+'.')
+		dialog.Destroy()
+
+
+	def calculate_intensity(self,event):
+
+		if self.path_to_files is None or self.result_path is None:
+
+			wx.MessageBox('No input file(s) / result folder.','Error',wx.OK|wx.ICON_ERROR)
+
+		else:
+
+			for i in self.path_to_files:
+				AC=AnalyzeCells(i,self.result_path,self.path_to_detector,self.cell_kinds,self.names_colors,detection_threshold=self.detection_threshold,expansion=self.expansion,show_ids=self.show_ids)
+				AC.analyze_singlechannel()
+
+
+
 def main_window():
 
 	the_absolute_current_path=str(Path(__file__).resolve().parent)
