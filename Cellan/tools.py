@@ -184,3 +184,47 @@ def preprocess_image(path_to_image,out_folder,downsize_factor,enhance_contrast=T
 		pass
 
 	print('The processed image(s) stored in: '+out_folder)
+
+
+def calculate_totalintensity(path_to_file,results_path):
+
+	images={}
+	os.makedirs(results_path,exist_ok=True)
+
+	if os.path.splitext(os.path.basename(path_to_file))[1] in ['.lif','.LIF']:
+		lifdata=LifFile(path_to_file)
+		file=[i for i in lifdata.get_iter_image()][0]
+		for c in [i for i in file.get_iter_c(t=0,z=0)]:
+			images[c]=np.array(file.get_frame(z=0,t=0,c=c))
+	else:
+		if os.path.splitext(os.path.basename(path_to_file))[1] in ['.qptiff','.QPTIFF']:
+			for c in list(range(imread(path_to_file).shape[0])):
+				images[c]=imread(path_to_file)[c,:,:]
+		else:
+			for c in list(range(imread(path_to_file).shape[2])):
+				images[c]=imread(path_to_file)[:,:,c]
+
+	areas={}
+	intensities={}
+
+	for c in images:
+		binary_mask=images[c]>0
+		area=np.count_nonzero(binary_mask)
+		areas[c]=area
+		if area>0:
+			intensities[c]=np.sum(images[c][binary_mask])/area
+		else:
+			intensities[c]=0
+
+	dfs=[]
+
+	for c in images:
+		dfs.append(pd.DataFrame(areas[c],columns=['area_'+str(c)]).reset_index(drop=True))
+		dfs.append(pd.DataFrame(intensities[c],columns=['intensity_'+str(c)]).reset_index(drop=True))
+	out_sheet=os.path.join(results_path,os.path.splitext(os.path.basename(path_to_file))[0]+'_'+'_total_intensity.xlsx')
+	pd.concat(dfs,axis=1).to_excel(out_sheet,float_format='%.2f')
+
+	print('Analysis completed!')
+
+
+
