@@ -9,6 +9,7 @@ import matplotlib.cm as cm
 import json
 import shutil
 import tifffile
+import pandas as pd
 from .analyzer import AnalyzeCells
 from .detector import Detector
 from .tools import extract_images,preprocess_image,calculate_totalintensity
