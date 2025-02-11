@@ -71,10 +71,26 @@ class Detector():
 			if torch.cuda.get_device_properties(0).total_memory/1024**3<4:
 				cfg.MODEL.FPN.USE_GN=True
 				cfg.SOLVER.IMS_PER_BATCH=2
-			elif torch.cuda.get_device_properties(0).total_memory/1024**3<8:
+			elif torch.cuda.get_device_properties(0).total_memory/1024**3<16:
 				cfg.MODEL.FPN.USE_GN=True
 				cfg.SOLVER.IMS_PER_BATCH=4
+			elif torch.cuda.get_device_properties(0).total_memory/1024**3<32:
+				if inference_size<640:
+					cfg.MODEL.FPN.USE_GN=False
+					cfg.SOLVER.IMS_PER_BATCH=16
+				else:
+					cfg.MODEL.FPN.USE_GN=True
+					cfg.SOLVER.IMS_PER_BATCH=8
 			else:
+				if inference_size<640:
+					cfg.MODEL.FPN.USE_GN=False
+					cfg.SOLVER.IMS_PER_BATCH=32
+				elif inference_size<1280:
+					cfg.MODEL.FPN.USE_GN=False
+					cfg.SOLVER.IMS_PER_BATCH=16
+				else:
+					cfg.MODEL.FPN.USE_GN=True
+					cfg.SOLVER.IMS_PER_BATCH=8
 		else:
 			cfg.MODEL.FPN.USE_GN=True
 			cfg.SOLVER.IMS_PER_BATCH=2
