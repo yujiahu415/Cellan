@@ -11,7 +11,7 @@ import shutil
 import tifffile
 from .analyzer import AnalyzeCells
 from .detector import Detector
-from .tools import extract_images,preprocess_image
+from .tools import extract_images,preprocess_image,calculate_totalintensity
 from Cellan import __version__
 
 
@@ -223,7 +223,7 @@ class WindowLv1_AnalysisModule(wx.Frame):
 
 	def __init__(self,title):
 
-		super(WindowLv1_AnalysisModule,self).__init__(parent=None,title=title,size=(500,250))
+		super(WindowLv1_AnalysisModule,self).__init__(parent=None,title=title,size=(500,290))
 		self.dispaly_window()
 
 
@@ -238,6 +238,13 @@ class WindowLv1_AnalysisModule(wx.Frame):
 		wx.Button.SetToolTip(button_analyzemultichannels,
 			'Automatically detect cells of your interest and analyze their numbers, areas, and pixel intensities in multi-channel images.')
 		boxsizer.Add(button_analyzemultichannels,0,wx.ALIGN_CENTER,10)
+		boxsizer.Add(0,5,0)
+
+		button_calculateintensities=wx.Button(panel,label='Calculate Channel Intensities',size=(300,40))
+		button_calculateintensities.Bind(wx.EVT_BUTTON,self.calculate_intensities)
+		wx.Button.SetToolTip(button_calculateintensities,
+			'Calculate total intensity of each channel in images.')
+		boxsizer.Add(button_calculateintensities,0,wx.ALIGN_CENTER,10)
 		boxsizer.Add(0,5,0)
 
 		button_analyzesinglechannel=wx.Button(panel,label='Analyze Singlechannel Images',size=(300,40))
@@ -261,6 +268,11 @@ class WindowLv1_AnalysisModule(wx.Frame):
 	def analyze_singlechannels(self,event):
 
 		WindowLv2_AnalyzeSingleChannel('Analyze Singlechannel Images')
+
+
+	def calculate_intensities(self,event):
+
+		WindowLv2_CalculateTotalIntensity('Calculate Channel Intensities')
 
 
 
@@ -1896,7 +1908,7 @@ class WindowLv2_CalculateTotalIntensity(wx.Frame):
 
 		button_analyze=wx.Button(panel,label='Start to calculate intensity',size=(300,40))
 		button_analyze.Bind(wx.EVT_BUTTON,self.calculate_intensity)
-		wx.Button.SetToolTip(button_analyze,'Will output the numbers, areas, and pixel intensities for each cell of interest.')
+		wx.Button.SetToolTip(button_analyze,'Will calculate total pixel intensities for each channel of an image.')
 		boxsizer.Add(0,5,0)
 		boxsizer.Add(button_analyze,0,wx.RIGHT|wx.ALIGN_RIGHT,90)
 		boxsizer.Add(0,10,0)
@@ -1936,8 +1948,7 @@ class WindowLv2_CalculateTotalIntensity(wx.Frame):
 		else:
 
 			for i in self.path_to_files:
-				AC=AnalyzeCells(i,self.result_path,self.path_to_detector,self.cell_kinds,self.names_colors,detection_threshold=self.detection_threshold,expansion=self.expansion,show_ids=self.show_ids)
-				AC.analyze_singlechannel()
+				calculate_totalintensity(i,self.result_path)
 
 
 
