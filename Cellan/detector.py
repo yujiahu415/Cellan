@@ -67,33 +67,7 @@ class Detector():
 		cfg.MODEL.ROI_HEADS.NUM_CLASSES=int(len(classnames))
 		cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST=0.5
 		cfg.MODEL.DEVICE=self.device
-		if cfg.MODEL.DEVICE=='cuda':
-			if torch.cuda.get_device_properties(0).total_memory/1024**3<4:
-				cfg.MODEL.FPN.USE_GN=True
-				cfg.SOLVER.IMS_PER_BATCH=2
-			elif torch.cuda.get_device_properties(0).total_memory/1024**3<16:
-				cfg.MODEL.FPN.USE_GN=True
-				cfg.SOLVER.IMS_PER_BATCH=4
-			elif torch.cuda.get_device_properties(0).total_memory/1024**3<32:
-				if inference_size<640:
-					cfg.MODEL.FPN.USE_GN=False
-					cfg.SOLVER.IMS_PER_BATCH=16
-				else:
-					cfg.MODEL.FPN.USE_GN=True
-					cfg.SOLVER.IMS_PER_BATCH=8
-			else:
-				if inference_size<640:
-					cfg.MODEL.FPN.USE_GN=False
-					cfg.SOLVER.IMS_PER_BATCH=32
-				elif inference_size<1280:
-					cfg.MODEL.FPN.USE_GN=False
-					cfg.SOLVER.IMS_PER_BATCH=16
-				else:
-					cfg.MODEL.FPN.USE_GN=True
-					cfg.SOLVER.IMS_PER_BATCH=8
-		else:
-			cfg.MODEL.FPN.USE_GN=True
-			cfg.SOLVER.IMS_PER_BATCH=2
+		cfg.SOLVER.IMS_PER_BATCH=4
 		cfg.SOLVER.MAX_ITER=int(iteration_num)
 		cfg.SOLVER.BASE_LR=0.001
 		cfg.SOLVER.WARMUP_ITERS=int(iteration_num*0.1)
