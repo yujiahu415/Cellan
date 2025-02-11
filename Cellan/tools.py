@@ -190,15 +190,16 @@ def preprocess_image(path_to_image,out_folder,downsize_factor,enhance_contrast=T
 def calculate_totalintensity(path_to_file,results_path):
 
 	images={}
-	os.makedirs(os.path.join(results_path,os.path.splitext(os.path.basename(path_to_file))[0]),exist_ok=True)
+	basename=os.path.splitext(os.path.basename(path_to_file))
+	os.makedirs(os.path.join(results_path,basename[0]),exist_ok=True)
 
-	if os.path.splitext(os.path.basename(path_to_file))[1] in ['.lif','.LIF']:
+	if basename[1] in ['.lif','.LIF']:
 		lifdata=LifFile(path_to_file)
 		file=[i for i in lifdata.get_iter_image()][0]
 		for c in range(len([i for i in file.get_iter_c(t=0,z=0)])):
 			images[c]=np.array(file.get_frame(z=0,t=0,c=c))
 	else:
-		if os.path.splitext(os.path.basename(path_to_file))[1] in ['.qptiff','.QPTIFF']:
+		if basename[1] in ['.qptiff','.QPTIFF']:
 			for c in list(range(imread(path_to_file).shape[0])):
 				images[c]=imread(path_to_file)[c,:,:]
 		else:
@@ -222,7 +223,7 @@ def calculate_totalintensity(path_to_file,results_path):
 		dfs['area_'+str(c)]=areas[c]
 		dfs['intensity_'+str(c)]=intensities[c]
 	dfs=pd.DataFrame(dfs,index=['value'])
-	out_sheet=os.path.join(results_path,os.path.splitext(os.path.basename(path_to_file))[0],os.path.splitext(os.path.basename(path_to_file))[0]+'_total_intensity.xlsx')
+	out_sheet=os.path.join(results_path,basename[0],basename[0]+'_total_intensity.xlsx')
 	dfs.to_excel(out_sheet,float_format='%.2f')
 
 	print('Analysis completed!')
