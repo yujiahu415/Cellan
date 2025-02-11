@@ -194,7 +194,7 @@ def calculate_totalintensity(path_to_file,results_path):
 	if os.path.splitext(os.path.basename(path_to_file))[1] in ['.lif','.LIF']:
 		lifdata=LifFile(path_to_file)
 		file=[i for i in lifdata.get_iter_image()][0]
-		for c in [i for i in file.get_iter_c(t=0,z=0)]:
+		for c in range(len([i for i in file.get_iter_c(t=0,z=0)])):
 			images[c]=np.array(file.get_frame(z=0,t=0,c=c))
 	else:
 		if os.path.splitext(os.path.basename(path_to_file))[1] in ['.qptiff','.QPTIFF']:
