@@ -46,7 +46,7 @@ class AnalyzeCells():
 			detect_image=np.array(file.get_frame(z=0,t=0,c=detection_channel))
 			if len(analysis_channels)==0:
 				c_list=[i for i in file.get_iter_c(t=0,z=0)]
-				analysis_channels=c_list
+				analysis_channels=list(range(len(c_list)))
 		else:
 			if os.path.splitext(os.path.basename(self.path_to_file))[1] in ['.qptiff','.QPTIFF']:
 				detect_image=imread(self.path_to_file)[detection_channel,:,:]
