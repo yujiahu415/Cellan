@@ -190,7 +190,7 @@ def preprocess_image(path_to_image,out_folder,downsize_factor,enhance_contrast=T
 def calculate_totalintensity(path_to_file,results_path):
 
 	images={}
-	os.makedirs(results_path,exist_ok=True)
+	os.makedirs(os.path.join(results_path,os.path.splitext(os.path.basename(path_to_file))[0]),exist_ok=True)
 
 	if os.path.splitext(os.path.basename(path_to_file))[1] in ['.lif','.LIF']:
 		lifdata=LifFile(path_to_file)
