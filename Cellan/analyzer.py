@@ -94,10 +94,9 @@ class AnalyzeCells():
 						background=np.uint8(np.ones((self.fov_dim,self.fov_dim),dtype='uint8')*255)
 					background[:detect_fov.shape[0],:detect_fov.shape[1]]=detect_fov
 					detect_fov=background
+
 				analysis_fovs={}
-
 				for c in analysis_channels:
-
 					if self.lif:
 						analysis_fov=np.array(file.get_frame(z=0,t=0,c=c))[int(h*self.fov_dim):min(int((h+1)*self.fov_dim),height),int(w*self.fov_dim):min(int((w+1)*self.fov_dim),width)]
 					else:
@@ -321,46 +320,41 @@ class AnalyzeCells():
 		print('Analysis completed!')
 
 
-	def normed_channel_intensities(self,norm_channel=0,analysis_channels=[],detection=False):
+	def calculate_totalintensity(self):
 
-		if detection:
+		images={}
 
-			pass
-
+		if self.lif:
+			lifdata=LifFile(self.path_to_file)
+			file=[i for i in lifdata.get_iter_image()][0]
+			for c in [i for i in file.get_iter_c(t=0,z=0)]:
+				images[c]=np.array(file.get_frame(z=0,t=0,c=c))
 		else:
-
-			if self.lif:
-				lifdata=LifFile(self.path_to_file)
-				file=[i for i in lifdata.get_iter_image()][0]
-				norm_image=np.array(file.get_frame(z=0,t=0,c=norm_channel))
-				if len(analysis_channels)==0:
-					c_list=[i for i in file.get_iter_c(t=0,z=0)]
-					analysis_channels=c_list
+			if os.path.splitext(os.path.basename(self.path_to_file))[1] in ['.qptiff','.QPTIFF']:
+				for c in list(range(imread(self.path_to_file).shape[0])):
+					images[c]=imread(self.path_to_file)[c,:,:]
 			else:
-				if os.path.splitext(os.path.basename(self.path_to_file))[1] in ['.qptiff','.QPTIFF']:
-					norm_image=imread(self.path_to_file)[norm_channel,:,:]
-					if len(analysis_channels)==0:
-						analysis_channels=list(range(imread(self.path_to_file).shape[0]))
-				else:
-					norm_image=imread(self.path_to_file)[:,:,norm_channel]
-					if len(analysis_channels)==0:
-						analysis_channels=list(range(imread(self.path_to_file).shape[2]))
+				for c in list(range(imread(self.path_to_file).shape[2])):
+					images[c]=imread(self.path_to_file)[:,:,c]
 
-			areas={}
-			areas[norm_channel]=0
-			intensities={}
-			intensities[norm_channel]=1
-			for c in analysis_channels:
+		areas={}
+		intensities={}
+
+		for c in images:
+			binary_mask=images[c]>0
+			area=np.count_nonzero(binary_mask)
+			areas[c]=area
+			if area>0:
+				intensities[c]=np.sum(images[c][binary_mask])/area
+			else:
 				intensities[c]=0
 
-			dfs=[]
+		dfs=[]
 
-			dfs.append(pd.DataFrame([i+1 for i in range(len(cell_centers[cell_name]))],columns=['number']).reset_index(drop=True))
-			dfs.append(pd.DataFrame(cell_centers[cell_name],columns=['center_x','center_y']).reset_index(drop=True))
-			dfs.append(pd.DataFrame(cell_areas[cell_name],columns=['areas']).reset_index(drop=True))
-			for c in analysis_channels:
-				dfs.append(pd.DataFrame(cell_intensities[cell_name][c],columns=['intensity_'+str(c)]).reset_index(drop=True))
-			out_sheet=os.path.join(self.results_path,os.path.splitext(os.path.basename(self.path_to_file))[0]+'_'+cell_name+'_summary.xlsx')
-			pd.concat(dfs,axis=1).to_excel(out_sheet,float_format='%.2f',index_label='ID/parameter')
+		for c in images:
+			dfs.append(pd.DataFrame(areas[c],columns=['area_'+str(c)]).reset_index(drop=True))
+			dfs.append(pd.DataFrame(intensities[c],columns=['intensity_'+str(c)]).reset_index(drop=True))
+		out_sheet=os.path.join(self.results_path,os.path.splitext(os.path.basename(self.path_to_file))[0]+'_'+'_total_intensity.xlsx')
+		pd.concat(dfs,axis=1).to_excel(out_sheet,float_format='%.2f')
 
 		print('Analysis completed!')
