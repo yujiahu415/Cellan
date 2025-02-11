@@ -217,13 +217,13 @@ def calculate_totalintensity(path_to_file,results_path):
 		else:
 			intensities[c]=0
 
-	dfs=[]
-
+	dfs={}
 	for c in images:
-		dfs.append(pd.DataFrame(areas[c],columns=['area_'+str(c)]).reset_index(drop=True))
-		dfs.append(pd.DataFrame(intensities[c],columns=['intensity_'+str(c)]).reset_index(drop=True))
+		dfs['area_'+str(c)]=areas[c]
+		dfs['intensity_'+str(c)]=intensities[c]
+	dfs=pd.DataFrame(dfs,index=['value'])
 	out_sheet=os.path.join(results_path,os.path.splitext(os.path.basename(path_to_file))[0]+'_total_intensity.xlsx')
-	pd.concat(dfs,axis=1).to_excel(out_sheet,float_format='%.2f')
+	dfs.to_excel(out_sheet,float_format='%.2f')
 
 	print('Analysis completed!')
 
