@@ -1964,8 +1964,8 @@ class WindowLv2_CalculateTotalIntensity(wx.Frame):
 					names.append(basename)
 
 			if len(all_intensities)>=1:
-				all_intensities=pd.concat(all_intensities,keys=names,names=['File name','parameters'])
-				all_intensities.drop(all_intensities.columns[0],axis=1,inplace=True)
+				all_intensities=pd.concat(all_intensities,keys=names,names=['File name'])
+				all_intensities.drop(all_intensities.columns[0,1],axis=1,inplace=True)
 				all_intensities.to_excel(os.path.join(self.result_path,'all_intensities.xlsx'),float_format='%.2f')
 
 
