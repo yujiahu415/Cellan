@@ -15,16 +15,6 @@ class AnalyzeCells():
 
 	def __init__(self,path_to_file,results_path,path_to_detector,cell_kinds,names_colors,detection_threshold=None,expansion=None,show_ids=False):
 
-		self.detector=Detector()
-		self.detector.load(path_to_detector,cell_kinds)
-		self.cell_kinds=cell_kinds
-		self.cell_mapping=self.detector.cell_mapping
-		if self.detection_threshold is None:
-			self.detection_threshold={}
-			for cell_name in self.cell_kinds:
-				self.detection_threshold[cell_name]=0
-		self.names_colors=names_colors
-		self.detection_threshold=detection_threshold
 		self.path_to_file=path_to_file
 		self.results_path=os.path.join(results_path,os.path.splitext(os.path.basename(self.path_to_file))[0])
 		if os.path.splitext(os.path.basename(self.path_to_file))[1] in ['.lif','.LIF']:
@@ -32,6 +22,16 @@ class AnalyzeCells():
 		else: 
 			self.lif=False
 		os.makedirs(self.results_path,exist_ok=True)
+		self.detector=Detector()
+		self.detector.load(path_to_detector,cell_kinds)
+		self.cell_kinds=cell_kinds
+		self.cell_mapping=self.detector.cell_mapping
+		self.names_colors=names_colors
+		self.detection_threshold=detection_threshold
+		if self.detection_threshold is None:
+			self.detection_threshold={}
+			for cell_name in self.cell_kinds:
+				self.detection_threshold[cell_name]=0
 		self.expansion=expansion
 		self.fov_dim=self.detector.inferencing_framesize
 		self.black_background=self.detector.black_background
