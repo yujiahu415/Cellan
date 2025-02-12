@@ -1669,9 +1669,26 @@ class WindowLv2_AnalyzeMultiChannels(wx.Frame):
 
 		else:
 
+			all_summary=[]
+			names=[]
+
 			for i in self.path_to_files:
 				AC=AnalyzeCells(i,self.result_path,self.path_to_detector,self.cell_kinds,self.names_colors,detection_threshold=self.detection_threshold,expansion=self.expansion,show_ids=self.show_ids)
 				AC.analyze_multichannels(detection_channel=self.detection_channel,analysis_channels=self.analysis_channels)
+
+				basename=os.path.splitext(os.path.basename(i))[0]
+				individual_path=os.path.join(self.result_path,basename)
+
+				for cell_name in self.cell_kinds:
+					individual_summary=os.path.join(individual_path,basename+'_'+cell_name+'_summary.xlsx')
+					if os.path.exists(individual_summary):
+						all_summary.append(pd.read_excel(individual_summary))
+						names.append(basename+'_'+cell_name)
+
+			if len(all_summary)>=1:
+				all_summary=pd.concat(all_summary,keys=names,names=['File name','seq']).reset_index(level='seq',drop=True)
+				all_summary.drop(all_summary.columns[0],axis=1,inplace=True)
+				all_summary.to_excel(os.path.join(self.result_path,'all_summary.xlsx'),float_format='%.2f')
 
 
 
@@ -1964,9 +1981,8 @@ class WindowLv2_CalculateTotalIntensity(wx.Frame):
 					names.append(basename)
 
 			if len(all_intensities)>=1:
-				all_intensities=pd.concat(all_intensities,keys=names,names=['File name','null'])
+				all_intensities=pd.concat(all_intensities,keys=names,names=['File name','seq']).reset_index(level='seq',drop=True)
 				all_intensities.drop(all_intensities.columns[0],axis=1,inplace=True)
-				all_intensities.drop(columns=['null'])
 				all_intensities.to_excel(os.path.join(self.result_path,'all_intensities.xlsx'),float_format='%.2f')
 
 
