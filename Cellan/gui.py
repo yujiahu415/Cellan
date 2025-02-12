@@ -1881,9 +1881,36 @@ class WindowLv2_AnalyzeSingleChannel(wx.Frame):
 
 		else:
 
+			all_summary=[]
+			names_summary=[]
+			all_arearatios=[]
+			names_arearatios=[]
+
 			for i in self.path_to_files:
 				AC=AnalyzeCells(i,self.result_path,self.path_to_detector,self.cell_kinds,self.names_colors,detection_threshold=self.detection_threshold,expansion=self.expansion,show_ids=self.show_ids)
 				AC.analyze_singlechannel()
+
+				basename=os.path.splitext(os.path.basename(i))[0]
+				individual_path=os.path.join(self.result_path,basename)
+
+				for cell_name in self.cell_kinds:
+					individual_summary=os.path.join(individual_path,basename+'_'+cell_name+'_summary.xlsx')
+					individual_arearatio=os.path.join(individual_path,basename+'_'+cell_name+'_arearatio.xlsx')
+					if os.path.exists(individual_summary):
+						all_summary.append(pd.read_excel(individual_summary))
+						names_summary.append(basename+'_'+cell_name)
+					if os.path.exists(individual_arearatio):
+						all_arearatios.append(pd.read_excel(individual_arearatio))
+						names_arearatios.append(basename+'_'+cell_name)
+
+			if len(all_summary)>=1:
+				all_summary=pd.concat(all_summary,keys=names_summary,names=['File name','seq']).reset_index(level='seq',drop=True)
+				all_summary.drop(all_summary.columns[0],axis=1,inplace=True)
+				all_summary.to_excel(os.path.join(self.result_path,'all_summary.xlsx'),float_format='%.2f')
+			if len(all_arearatios)>=1:
+				all_arearatios=pd.concat(all_arearatios,keys=names_arearatios,names=['File name','seq']).reset_index(level='seq',drop=True)
+				all_arearatios.drop(all_arearatios.columns[0],axis=1,inplace=True)
+				all_arearatios.to_excel(os.path.join(self.result_path,'all_arearatios.xlsx'),float_format='%.2f')
 
 
 
