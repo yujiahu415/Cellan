@@ -1910,7 +1910,7 @@ class WindowLv2_AnalyzeSingleChannel(wx.Frame):
 			if len(all_arearatios)>=1:
 				all_arearatios=pd.concat(all_arearatios,keys=names_arearatios,names=['File name','seq']).reset_index(level='seq',drop=True)
 				all_arearatios.drop(all_arearatios.columns[0],axis=1,inplace=True)
-				all_arearatios.to_excel(os.path.join(self.result_path,'all_arearatios.xlsx'),float_format='%.2f')
+				all_arearatios.to_excel(os.path.join(self.result_path,'all_arearatios.xlsx'),float_format='%.6f')
 
 
 
