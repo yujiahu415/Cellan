@@ -9,6 +9,7 @@ authors=[{name='Yujia Hu',email='yujiahu415@gmail.com'}]
 dependencies=[
 	'numpy<=1.26.4',
 	'scipy',
+	'scikit-image'
 	'readlif',
 	'tifffile',
 	'imagecodecs',
