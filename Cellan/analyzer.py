@@ -96,6 +96,7 @@ class AnalyzeCells():
 					detect_fov=background
 
 				analysis_fovs={}
+				to_annotates={}
 				for c in analysis_channels:
 					if self.lif:
 						analysis_fov=np.array(file.get_frame(z=0,t=0,c=c))[int(h*self.fov_dim):min(int((h+1)*self.fov_dim),height),int(w*self.fov_dim):min(int((w+1)*self.fov_dim),width)]
@@ -112,6 +113,7 @@ class AnalyzeCells():
 						background[:analysis_fov.shape[0],:analysis_fov.shape[1]]=analysis_fov
 						analysis_fov=background
 					analysis_fovs[c]=analysis_fov
+					to_annotates[c]=cv2.cvtColor(np.uint8(exposure.rescale_intensity(analysis_fov,out_range=(0,255))),cv2.COLOR_GRAY2BGR)
 
 				output=self.detector.inference([{'image':torch.as_tensor(detect_fov.astype('float32').transpose(2,0,1))}])
 				instances=output[0]['instances'].to('cpu')
@@ -159,7 +161,7 @@ class AnalyzeCells():
 
 									for c in analysis_channels:
 										analysis_fov=analysis_fovs[c]
-										to_annotate=cv2.cvtColor(np.uint8(exposure.rescale_intensity(analysis_fov,out_range=(0,255))),cv2.COLOR_GRAY2BGR)
+										to_annotate=to_annotates[c]
 										for n,cnt in enumerate(goodcontours):
 											area=cell_areas[cell_name][n]
 											if area>0:
@@ -169,9 +171,12 @@ class AnalyzeCells():
 													cx-=int(w*self.fov_dim)
 													cy-=int(h*self.fov_dim)
 													cv2.putText(to_annotate,str(len(cell_intensities[cell_name][c])),(cx,cy),cv2.FONT_HERSHEY_SIMPLEX,thickness,color,thickness)
+												to_annotates[c]=to_annotate
 											else:
 												cell_intensities[cell_name][c].append(0)
-										cv2.imwrite(os.path.join(self.results_path,os.path.splitext(os.path.basename(self.path_to_file))[0]+'_'+str(w)+str(h)+'_c'+str(c)+'_annotated.jpg'),to_annotate)
+
+					for c in analysis_channels:
+						cv2.imwrite(os.path.join(self.results_path,os.path.splitext(os.path.basename(self.path_to_file))[0]+'_'+str(w)+str(h)+'_c'+str(c)+'_annotated.jpg'),to_annotates[c])
 
 		for cell_name in self.cell_kinds:
 
@@ -257,6 +262,8 @@ class AnalyzeCells():
 
 				if len(masks)>0:
 
+					to_annotate=np.uint8(exposure.rescale_intensity(analysis_fov,out_range=(0,255)))
+
 					for cell_name in self.cell_kinds:
 
 						hex_color=self.names_colors[cell_name].lstrip('#')
@@ -278,7 +285,6 @@ class AnalyzeCells():
 
 								if len(goodmasks)>0:
 
-									to_annotate=np.uint8(exposure.rescale_intensity(analysis_fov,out_range=(0,255)))
 									cell_numbers[cell_name]+=len(goodmasks)
 
 									for mask in goodmasks:
@@ -304,7 +310,7 @@ class AnalyzeCells():
 										else:
 											cell_intensities[cell_name].append(0)
 
-									cv2.imwrite(os.path.join(self.results_path,os.path.splitext(os.path.basename(self.path_to_file))[0]+'_'+str(w)+str(h)+'_annotated.jpg'),to_annotate)
+					cv2.imwrite(os.path.join(self.results_path,os.path.splitext(os.path.basename(self.path_to_file))[0]+'_'+str(w)+str(h)+'_annotated.jpg'),to_annotate)
 
 		for cell_name in self.cell_kinds:
 
