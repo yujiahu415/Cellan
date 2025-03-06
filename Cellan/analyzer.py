@@ -13,7 +13,7 @@ from skimage import exposure
 
 class AnalyzeCells():
 
-	def __init__(self,path_to_file,results_path,path_to_detector,cell_kinds,names_colors,detection_threshold=None,expansion=None,show_ids=False,filters=[],inners=False):
+	def __init__(self,path_to_file,results_path,path_to_detector,cell_kinds,names_colors,detection_threshold=None,expansion=None,show_ids=False,filters={},inners=False):
 
 		self.path_to_file=path_to_file
 		self.results_path=os.path.join(results_path,os.path.splitext(os.path.basename(self.path_to_file))[0])
@@ -224,6 +224,10 @@ class AnalyzeCells():
 			cell_numbers[cell_name]=0
 			cell_centers[cell_name]=[]
 			cell_areas[cell_name]=[]
+			cell_heights[cell_name]=[]
+			cell_widths[cell_name]=[]
+			cell_perimeter[cell_name]=[]
+			cell_roundness[cell_name]=[]
 			cell_intensities[cell_name]=[]
 			total_cell_area[cell_name]=0
 
@@ -305,16 +309,29 @@ class AnalyzeCells():
 											area=np.sum(np.array(mask),axis=(0,1))
 											perimeter=cv2.arcLength(cnt,closed=True)
 											roundness=perimeter*perimeter/(4*np.pi*area)
-											(_,_),(w,h),_=cv2.minAreaRect(cnt)
+											(_,_),(width,height),_=cv2.minAreaRect(cnt)
 											intensity=np.sum(analysis_fov*cv2.cvtColor(mask,cv2.COLOR_GRAY2BGR))/area
-											
-											cell_numbers[cell_name]+=1
-											cx=int(cv2.moments(cnt)['m10']/cv2.moments(cnt)['m00'])+int(w*self.fov_dim)
-											cy=int(cv2.moments(cnt)['m01']/cv2.moments(cnt)['m00'])+int(h*self.fov_dim)
-											cell_centers[cell_name].append((cx,cy))
-											
-											cell_areas[cell_name].append(area)
+											if 'area' in self.filters:
+												if area<self.filters['area'][0] or area>self.filters['area'][1]:
+													continue
+											if 'perimeter' in self.filters:
+												if perimeter<self.filters['perimeter'][0] or perimeter>self.filters['perimeter'][1]:
+													continue
+											if 'roundness' in self.filters:
+												if roundness<self.filters['roundness'][0] or roundness>self.filters['roundness'][1]:
+													continue
+											if 'width' in self.filters:
+												if width<self.filters['width'][0] or width>self.filters['width'][1]:
+													continue
+											if 'height' in self.filters:
+												if height<self.filters['height'][0] or height>self.filters['height'][1]:
+													continue
 											if area>0:
+												cell_numbers[cell_name]+=1
+												cx=int(cv2.moments(cnt)['m10']/cv2.moments(cnt)['m00'])+int(w*self.fov_dim)
+												cy=int(cv2.moments(cnt)['m01']/cv2.moments(cnt)['m00'])+int(h*self.fov_dim)
+												cell_centers[cell_name].append((cx,cy))
+												cell_areas[cell_name].append(area)
 												cell_intensities[cell_name].append(np.sum(analysis_fov*cv2.cvtColor(mask,cv2.COLOR_GRAY2BGR))/area)
 												cv2.drawContours(to_annotate,[cnt],0,color,thickness)
 												if self.show_ids:
@@ -322,8 +339,7 @@ class AnalyzeCells():
 													cy-=int(h*self.fov_dim)
 													cv2.putText(to_annotate,str(len(cell_centers[cell_name])),(cx,cy),cv2.FONT_HERSHEY_SIMPLEX,thickness,color,thickness)
 												total_cell_area[cell_name]+=area
-											else:
-												cell_intensities[cell_name].append(0)
+
 
 					cv2.imwrite(os.path.join(self.results_path,os.path.splitext(os.path.basename(self.path_to_file))[0]+'_'+str(w)+str(h)+'_annotated.jpg'),to_annotate)
 
