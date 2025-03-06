@@ -230,6 +230,11 @@ class AnalyzeCells():
 			cell_roundness[cell_name]=[]
 			cell_intensities[cell_name]=[]
 			total_cell_area[cell_name]=0
+			if self.inners:
+				inners_centers[cell_name]=[]
+				inners_heights[cell_name]=[]
+				inners_widths[cell_name]=[]
+				inners_areas[cell_name]=[]
 
 		image=imread(self.path_to_file)
 		image=cv2.cvtColor(image,cv2.COLOR_RGB2BGR)
