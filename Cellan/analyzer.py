@@ -292,7 +292,6 @@ class AnalyzeCells():
 						if len(cell_masks)>0:
 
 								goodmasks=[cell_masks[x] for x,score in enumerate(cell_scores) if score>=self.detection_threshold[cell_name]]
-								goodcontours=[]
 
 								if len(goodmasks)>0:
 
@@ -305,8 +304,10 @@ class AnalyzeCells():
 											cnt=sorted(cnts,key=cv2.contourArea,reverse=True)[0]
 											area=np.sum(np.array(mask),axis=(0,1))
 											perimeter=cv2.arcLength(cnt,closed=True)
-											roundness=4*np.pi*area
-											goodcontours.append(cnt)
+											roundness=perimeter*perimeter/(4*np.pi*area)
+											(_,_),(w,h),_=cv2.minAreaRect(cnt)
+											intensity=np.sum(analysis_fov*cv2.cvtColor(mask,cv2.COLOR_GRAY2BGR))/area
+											
 											cell_numbers[cell_name]+=1
 											cx=int(cv2.moments(cnt)['m10']/cv2.moments(cnt)['m00'])+int(w*self.fov_dim)
 											cy=int(cv2.moments(cnt)['m01']/cv2.moments(cnt)['m00'])+int(h*self.fov_dim)
