@@ -13,7 +13,7 @@ from skimage import exposure
 
 class AnalyzeCells():
 
-	def __init__(self,path_to_file,results_path,path_to_detector,cell_kinds,names_colors,detection_threshold=None,expansion=None,show_ids=False):
+	def __init__(self,path_to_file,results_path,path_to_detector,cell_kinds,names_colors,detection_threshold=None,expansion=None,show_ids=False,filters=[],inners=False):
 
 		self.path_to_file=path_to_file
 		self.results_path=os.path.join(results_path,os.path.splitext(os.path.basename(self.path_to_file))[0])
@@ -36,6 +36,8 @@ class AnalyzeCells():
 		self.fov_dim=self.detector.inferencing_framesize
 		self.black_background=self.detector.black_background
 		self.show_ids=show_ids
+		self.filters=filters
+		self.inners=inners
 
 
 	def analyze_multichannels(self,detection_channel=0,analysis_channels=[]):
@@ -205,9 +207,18 @@ class AnalyzeCells():
 		cell_numbers={}
 		cell_centers={}
 		cell_areas={}
+		cell_heights={}
+		cell_widths={}
+		cell_perimeter={}
+		cell_roundness={}
 		cell_intensities={}
 		total_cell_area={}
 		total_foreground_area=0
+		if self.inners:
+			inners_centers={}
+			inners_heights={}
+			inners_widths={}
+			inners_areas={}
 
 		for cell_name in self.cell_kinds:
 			cell_numbers[cell_name]=0
@@ -285,30 +296,33 @@ class AnalyzeCells():
 
 								if len(goodmasks)>0:
 
-									cell_numbers[cell_name]+=len(goodmasks)
-
 									for mask in goodmasks:
 										mask=cv2.morphologyEx(mask,cv2.MORPH_CLOSE,np.ones((5,5),np.uint8))
 										if self.expansion is not None:
 											mask=cv2.dilate(mask,np.ones((5,5),np.uint8),iterations=self.expansion)
 										cnts,_=cv2.findContours((mask*255).astype(np.uint8),cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_NONE)
-										cnt=sorted(cnts,key=cv2.contourArea,reverse=True)[0]
-										goodcontours.append(cnt)
-										cx=int(cv2.moments(cnt)['m10']/cv2.moments(cnt)['m00'])+int(w*self.fov_dim)
-										cy=int(cv2.moments(cnt)['m01']/cv2.moments(cnt)['m00'])+int(h*self.fov_dim)
-										cell_centers[cell_name].append((cx,cy))
-										area=np.sum(np.array(mask),axis=(0,1))
-										cell_areas[cell_name].append(area)
-										if area>0:
-											cell_intensities[cell_name].append(np.sum(analysis_fov*cv2.cvtColor(mask,cv2.COLOR_GRAY2BGR))/area)
-											cv2.drawContours(to_annotate,[cnt],0,color,thickness)
-											if self.show_ids:
-												cx-=int(w*self.fov_dim)
-												cy-=int(h*self.fov_dim)
-												cv2.putText(to_annotate,str(len(cell_centers[cell_name])),(cx,cy),cv2.FONT_HERSHEY_SIMPLEX,thickness,color,thickness)
-											total_cell_area[cell_name]+=area
-										else:
-											cell_intensities[cell_name].append(0)
+										if len(cnts)>0:
+											cnt=sorted(cnts,key=cv2.contourArea,reverse=True)[0]
+											area=np.sum(np.array(mask),axis=(0,1))
+											perimeter=cv2.arcLength(cnt,closed=True)
+											roundness=4*np.pi*area
+											goodcontours.append(cnt)
+											cell_numbers[cell_name]+=1
+											cx=int(cv2.moments(cnt)['m10']/cv2.moments(cnt)['m00'])+int(w*self.fov_dim)
+											cy=int(cv2.moments(cnt)['m01']/cv2.moments(cnt)['m00'])+int(h*self.fov_dim)
+											cell_centers[cell_name].append((cx,cy))
+											
+											cell_areas[cell_name].append(area)
+											if area>0:
+												cell_intensities[cell_name].append(np.sum(analysis_fov*cv2.cvtColor(mask,cv2.COLOR_GRAY2BGR))/area)
+												cv2.drawContours(to_annotate,[cnt],0,color,thickness)
+												if self.show_ids:
+													cx-=int(w*self.fov_dim)
+													cy-=int(h*self.fov_dim)
+													cv2.putText(to_annotate,str(len(cell_centers[cell_name])),(cx,cy),cv2.FONT_HERSHEY_SIMPLEX,thickness,color,thickness)
+												total_cell_area[cell_name]+=area
+											else:
+												cell_intensities[cell_name].append(0)
 
 					cv2.imwrite(os.path.join(self.results_path,os.path.splitext(os.path.basename(self.path_to_file))[0]+'_'+str(w)+str(h)+'_annotated.jpg'),to_annotate)
 
