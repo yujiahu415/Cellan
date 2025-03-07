@@ -1450,7 +1450,7 @@ class WindowLv2_AnalyzeMultiChannels(wx.Frame):
 
 	def __init__(self,title):
 
-		super(WindowLv2_AnalyzeMultiChannels,self).__init__(parent=None,title=title,size=(1000,330))
+		super(WindowLv2_AnalyzeMultiChannels,self).__init__(parent=None,title=title,size=(1000,370))
 		self.detector_path=None
 		self.path_to_detector=None
 		self.cell_kinds=None
@@ -1464,6 +1464,8 @@ class WindowLv2_AnalyzeMultiChannels(wx.Frame):
 		self.analysis_channels=[]
 		self.black_background=True
 		self.show_ids=False
+		self.filters={}
+		self.inners=None
 		
 		self.dispaly_window()
 
@@ -1673,7 +1675,8 @@ class WindowLv2_AnalyzeMultiChannels(wx.Frame):
 			names=[]
 
 			for i in self.path_to_files:
-				AC=AnalyzeCells(i,self.result_path,self.path_to_detector,self.cell_kinds,self.names_colors,detection_threshold=self.detection_threshold,expansion=self.expansion,show_ids=self.show_ids)
+				AC=AnalyzeCells(i,self.result_path,self.path_to_detector,self.cell_kinds,self.names_colors,detection_threshold=self.detection_threshold,expansion=self.expansion,show_ids=self.show_ids,
+					filters=self.filters,inners=self.inners)
 				AC.analyze_multichannels(detection_channel=self.detection_channel,analysis_channels=self.analysis_channels)
 
 				basename=os.path.splitext(os.path.basename(i))[0]
@@ -1708,6 +1711,8 @@ class WindowLv2_AnalyzeSingleChannel(wx.Frame):
 		self.names_colors=None
 		self.black_background=True
 		self.show_ids=False
+		self.filters={}
+		self.inners=None
 		
 		self.dispaly_window()
 
@@ -1887,7 +1892,8 @@ class WindowLv2_AnalyzeSingleChannel(wx.Frame):
 			names_arearatios=[]
 
 			for i in self.path_to_files:
-				AC=AnalyzeCells(i,self.result_path,self.path_to_detector,self.cell_kinds,self.names_colors,detection_threshold=self.detection_threshold,expansion=self.expansion,show_ids=self.show_ids)
+				AC=AnalyzeCells(i,self.result_path,self.path_to_detector,self.cell_kinds,self.names_colors,detection_threshold=self.detection_threshold,expansion=self.expansion,show_ids=self.show_ids,
+					filters=self.filters,inners=self.inners)
 				AC.analyze_singlechannel()
 
 				basename=os.path.splitext(os.path.basename(i))[0]
