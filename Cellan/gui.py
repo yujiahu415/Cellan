@@ -1753,6 +1753,16 @@ class WindowLv2_AnalyzeSingleChannel(wx.Frame):
 		boxsizer.Add(module_detection,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
 		boxsizer.Add(0,5,0)
 
+		module_filters=wx.BoxSizer(wx.HORIZONTAL)
+		button_filters=wx.Button(panel,label='Specify the filters to\nexclude unwanted cells',size=(300,40))
+		button_filters.Bind(wx.EVT_BUTTON,self.specify_filters)
+		wx.Button.SetToolTip(button_filters,'Select filters such as area, perimeter, roundness (1 is circle, higer value means less round), height, and width, and specify the minimum and maximum values of these filters.')
+		self.text_filters=wx.StaticText(panel,label='Default: None',style=wx.ALIGN_LEFT|wx.ST_ELLIPSIZE_END)
+		module_filters.Add(button_filters,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
+		module_filters.Add(self.text_filters,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
+		boxsizer.Add(module_filters,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
+		boxsizer.Add(0,5,0)
+
 		module_expansion=wx.BoxSizer(wx.HORIZONTAL)
 		button_expansion=wx.Button(panel,label='Specify the expansion\nof a cell',size=(300,40))
 		button_expansion.Bind(wx.EVT_BUTTON,self.specify_expansion)
@@ -1865,6 +1875,37 @@ class WindowLv2_AnalyzeSingleChannel(wx.Frame):
 				dialog1.Destroy()
 			self.text_detection.SetLabel('Detector: '+detector+'; '+'The cell kinds / detection threshold: '+str(self.detection_threshold)+'.')
 		dialog.Destroy()
+
+
+	def specify_filters(self,event):
+
+		filters_choices=['area','perimeter','roundness','height','width']
+
+		dialog=wx.MultiChoiceDialog(self,message='Select filters to exclude unwanted cells',caption='Filters',choices=filters_choices)
+		if dialog.ShowModal()==wx.ID_OK:
+			selected_filters=[filters_choices[i] for i in dialog.GetSelections()]
+		else:
+			selected_filters=[]
+		dialog.Destroy()
+
+		for ft in selected_filters:
+			dialog=wx.NumberEntryDialog(self,'The min value for '+str(ft),'The unit is pixel (except for roundness)','The min value for '+str(ft),0,0,100000000000000)
+			values=[0,np.inf]
+			if dialog.ShowModal()==wx.ID_OK:
+				values[0]=int(dialog.GetValue())
+			dialog.Destroy()
+			dialog=wx.NumberEntryDialog(self,'The max value (enter 0 for infinity) for '+str(ft),'The unit is pixel (except for roundness)','The max value for '+str(ft),0,0,100000000000000)
+			if dialog.ShowModal()==wx.ID_OK:
+				value=int(dialog.GetValue())
+				if value>0:
+					values[1]=value
+			dialog.Destroy()
+			self.filters[ft]=values
+
+		if len(self.filters)>0:
+			self.self.text_filters.SetLabel('Filters: '+str(self.filters))
+		else:
+			self.self.text_filters.SetLabel('NO filters selected.')
 
 
 	def specify_expansion(self,event):
