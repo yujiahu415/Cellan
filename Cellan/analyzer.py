@@ -359,12 +359,13 @@ class AnalyzeCells():
 														cv2.drawContours(to_annotate,[cnt],0,color,thickness)
 														area=np.count_nonzero(thred)
 														(_,_),(wd_in,ht_in),_=cv2.minAreaRect(cnt)
-														inners_heights[cell_name].append(ht_in)
-														inners_widths[cell_name].append(wd_in)
-														inners_out_ratio[cell_name].append((ht/ht_in+wd/wd_in)/2)
-
-												
-
+														ratio=(ht/ht_in+wd/wd_in)/2
+													else:
+														area=wd_in=ht_in=ratio=np.nan
+													inners_areas[cell_name].append(area)
+													inners_heights[cell_name].append(ht_in)
+													inners_widths[cell_name].append(wd_in)
+													inners_out_ratio[cell_name].append(ratio)
 
 					cv2.imwrite(os.path.join(self.results_path,os.path.splitext(os.path.basename(self.path_to_file))[0]+'_'+str(w)+str(h)+'_annotated.jpg'),to_annotate)
 
