@@ -134,48 +134,51 @@ class AnalyzeCells():
 
 						cell_masks=[masks[a] for a,name in enumerate(classes) if name==cell_name]
 						cell_scores=[scores[a] for a,name in enumerate(classes) if name==cell_name]
-						mask_area=np.sum(np.array(cell_masks),axis=(1,2))
-						exclusion_mask=np.zeros(len(cell_masks),dtype=bool)
-						exclusion_mask[np.where((np.sum(np.logical_and(np.array(cell_masks)[:,None],cell_masks),axis=(2,3))/mask_area[:,None]>0.8) & (mask_area[:,None]<mask_area[None,:]))[0]]=True
-						cell_masks=[m for m,exclude in zip(cell_masks,exclusion_mask) if not exclude]
-						cell_scores=[s for s,exclude in zip(cell_scores,exclusion_mask) if not exclude]
 
 						if len(cell_masks)>0:
 
-								goodmasks=[cell_masks[x] for x,score in enumerate(cell_scores) if score>=self.detection_threshold[cell_name]]
-								goodcontours=[]
+							mask_area=np.sum(np.array(cell_masks),axis=(1,2))
+							exclusion_mask=np.zeros(len(cell_masks),dtype=bool)
+							exclusion_mask[np.where((np.sum(np.logical_and(np.array(cell_masks)[:,None],cell_masks),axis=(2,3))/mask_area[:,None]>0.8) & (mask_area[:,None]<mask_area[None,:]))[0]]=True
+							cell_masks=[m for m,exclude in zip(cell_masks,exclusion_mask) if not exclude]
+							cell_scores=[s for s,exclude in zip(cell_scores,exclusion_mask) if not exclude]
 
-								if len(goodmasks)>0:
+							if len(cell_masks)>0:
 
-									cell_numbers[cell_name]+=len(goodmasks)
+									goodmasks=[cell_masks[x] for x,score in enumerate(cell_scores) if score>=self.detection_threshold[cell_name]]
+									goodcontours=[]
 
-									for mask in goodmasks:
-										mask=cv2.morphologyEx(mask,cv2.MORPH_CLOSE,np.ones((5,5),np.uint8))
-										if self.expansion is not None:
-											mask=cv2.dilate(mask,np.ones((5,5),np.uint8),iterations=self.expansion)
-										cnts,_=cv2.findContours((mask*255).astype(np.uint8),cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_NONE)
-										cnt=sorted(cnts,key=cv2.contourArea,reverse=True)[0]
-										goodcontours.append(cnt)
-										cx=int(cv2.moments(cnt)['m10']/cv2.moments(cnt)['m00'])+int(w*self.fov_dim)
-										cy=int(cv2.moments(cnt)['m01']/cv2.moments(cnt)['m00'])+int(h*self.fov_dim)
-										cell_centers[cell_name].append((cx,cy))
-										cell_areas[cell_name].append(np.sum(np.array(mask),axis=(0,1)))
+									if len(goodmasks)>0:
 
-									for c in analysis_channels:
-										analysis_fov=analysis_fovs[c]
-										to_annotate=to_annotates[c]
-										for n,cnt in enumerate(goodcontours):
-											area=cell_areas[cell_name][n]
-											if area>0:
-												cell_intensities[cell_name][c].append(np.sum(analysis_fov*goodmasks[n])/area)
-												cv2.drawContours(to_annotate,[cnt],0,color,thickness)
-												if self.show_ids:
-													cx-=int(w*self.fov_dim)
-													cy-=int(h*self.fov_dim)
-													cv2.putText(to_annotate,str(len(cell_intensities[cell_name][c])),(cx,cy),cv2.FONT_HERSHEY_SIMPLEX,thickness,color,thickness)
-												to_annotates[c]=to_annotate
-											else:
-												cell_intensities[cell_name][c].append(0)
+										cell_numbers[cell_name]+=len(goodmasks)
+
+										for mask in goodmasks:
+											mask=cv2.morphologyEx(mask,cv2.MORPH_CLOSE,np.ones((5,5),np.uint8))
+											if self.expansion is not None:
+												mask=cv2.dilate(mask,np.ones((5,5),np.uint8),iterations=self.expansion)
+											cnts,_=cv2.findContours((mask*255).astype(np.uint8),cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_NONE)
+											cnt=sorted(cnts,key=cv2.contourArea,reverse=True)[0]
+											goodcontours.append(cnt)
+											cx=int(cv2.moments(cnt)['m10']/cv2.moments(cnt)['m00'])+int(w*self.fov_dim)
+											cy=int(cv2.moments(cnt)['m01']/cv2.moments(cnt)['m00'])+int(h*self.fov_dim)
+											cell_centers[cell_name].append((cx,cy))
+											cell_areas[cell_name].append(np.sum(np.array(mask),axis=(0,1)))
+
+										for c in analysis_channels:
+											analysis_fov=analysis_fovs[c]
+											to_annotate=to_annotates[c]
+											for n,cnt in enumerate(goodcontours):
+												area=cell_areas[cell_name][n]
+												if area>0:
+													cell_intensities[cell_name][c].append(np.sum(analysis_fov*goodmasks[n])/area)
+													cv2.drawContours(to_annotate,[cnt],0,color,thickness)
+													if self.show_ids:
+														cx-=int(w*self.fov_dim)
+														cy-=int(h*self.fov_dim)
+														cv2.putText(to_annotate,str(len(cell_intensities[cell_name][c])),(cx,cy),cv2.FONT_HERSHEY_SIMPLEX,thickness,color,thickness)
+													to_annotates[c]=to_annotate
+												else:
+													cell_intensities[cell_name][c].append(0)
 
 					for c in analysis_channels:
 						cv2.imwrite(os.path.join(self.results_path,os.path.splitext(os.path.basename(self.path_to_file))[0]+'_'+str(w)+str(h)+'_c'+str(c)+'_annotated.jpg'),to_annotates[c])
@@ -292,80 +295,83 @@ class AnalyzeCells():
 
 						cell_masks=[masks[a] for a,name in enumerate(classes) if name==cell_name]
 						cell_scores=[scores[a] for a,name in enumerate(classes) if name==cell_name]
-						mask_area=np.sum(np.array(cell_masks),axis=(1,2))
-						exclusion_mask=np.zeros(len(cell_masks),dtype=bool)
-						exclusion_mask[np.where((np.sum(np.logical_and(np.array(cell_masks)[:,None],cell_masks),axis=(2,3))/mask_area[:,None]>0.8) & (mask_area[:,None]<mask_area[None,:]))[0]]=True
-						cell_masks=[m for m,exclude in zip(cell_masks,exclusion_mask) if not exclude]
-						cell_scores=[s for s,exclude in zip(cell_scores,exclusion_mask) if not exclude]
 
 						if len(cell_masks)>0:
 
-								goodmasks=[cell_masks[x] for x,score in enumerate(cell_scores) if score>=self.detection_threshold[cell_name]]
+							mask_area=np.sum(np.array(cell_masks),axis=(1,2))
+							exclusion_mask=np.zeros(len(cell_masks),dtype=bool)
+							exclusion_mask[np.where((np.sum(np.logical_and(np.array(cell_masks)[:,None],cell_masks),axis=(2,3))/mask_area[:,None]>0.8) & (mask_area[:,None]<mask_area[None,:]))[0]]=True
+							cell_masks=[m for m,exclude in zip(cell_masks,exclusion_mask) if not exclude]
+							cell_scores=[s for s,exclude in zip(cell_scores,exclusion_mask) if not exclude]
 
-								if len(goodmasks)>0:
+							if len(cell_masks)>0:
 
-									for mask in goodmasks:
-										mask=cv2.morphologyEx(mask,cv2.MORPH_CLOSE,np.ones((5,5),np.uint8))
-										if self.expansion is not None:
-											mask=cv2.dilate(mask,np.ones((5,5),np.uint8),iterations=self.expansion)
-										cnts,_=cv2.findContours((mask*255).astype(np.uint8),cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_NONE)
-										if len(cnts)>0:
-											cnt=sorted(cnts,key=cv2.contourArea,reverse=True)[0]
-											area=np.sum(np.array(mask),axis=(0,1))
-											perimeter=cv2.arcLength(cnt,closed=True)
-											roundness=(4*np.pi*area)/(perimeter*perimeter)
-											(_,_),(wd,ht),_=cv2.minAreaRect(cnt)
-											intensity=np.sum(analysis_fov*cv2.cvtColor(mask,cv2.COLOR_GRAY2BGR))/max(area,1)
-											if 'area' in self.filters:
-												if area<self.filters['area'][0] or area>self.filters['area'][1]:
-													continue
-											if 'perimeter' in self.filters:
-												if perimeter<self.filters['perimeter'][0] or perimeter>self.filters['perimeter'][1]:
-													continue
-											if 'roundness' in self.filters:
-												if roundness<self.filters['roundness'][0] or roundness>self.filters['roundness'][1]:
-													continue
-											if 'height' in self.filters:
-												if ht<self.filters['height'][0] or ht>self.filters['height'][1]:
-													continue
-											if 'width' in self.filters:
-												if wd<self.filters['width'][0] or wd>self.filters['width'][1]:
-													continue
-											if area>0:
-												cell_numbers[cell_name]+=1
-												cx=int(cv2.moments(cnt)['m10']/cv2.moments(cnt)['m00'])+int(w*self.fov_dim)
-												cy=int(cv2.moments(cnt)['m01']/cv2.moments(cnt)['m00'])+int(h*self.fov_dim)
-												cell_centers[cell_name].append((cx,cy))
-												cell_areas[cell_name].append(area)
-												cell_heights[cell_name].append(ht)
-												cell_widths[cell_name].append(wd)
-												cell_perimeter[cell_name].append(perimeter)
-												cell_roundness[cell_name].append(roundness)
-												cell_intensities[cell_name].append(intensity)
-												cv2.drawContours(to_annotate,[cnt],0,color,thickness)
-												if self.show_ids:
-													cx-=int(w*self.fov_dim)
-													cy-=int(h*self.fov_dim)
-													cv2.putText(to_annotate,str(len(cell_centers[cell_name])),(cx,cy),cv2.FONT_HERSHEY_SIMPLEX,thickness,color,thickness)
-												total_cell_area[cell_name]+=area
-												if self.inners is not None:
-													if self.inners=='white':
-														thred=cv2.threshold(cv2.cvtColor(detect_fov,cv2.COLOR_BGR2GRAY)*mask,0,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)[1]
-													else:
-														thred=cv2.threshold(cv2.cvtColor(detect_fov,cv2.COLOR_BGR2GRAY)*mask,0,255,cv2.THRESH_BINARY_INV+cv2.THRESH_OTSU)[1]
-													cnts,_=cv2.findContours(thred,cv2.RETR_LIST,cv2.CHAIN_APPROX_NONE)
-													if len(cnts)>2:
-														cnt=sorted(cnts,key=cv2.contourArea,reverse=True)[2]
-														cv2.drawContours(to_annotate,[cnt],0,color,thickness)
-														area=np.count_nonzero(thred)
-														(_,_),(wd_in,ht_in),_=cv2.minAreaRect(cnt)
-														ratio=(ht/ht_in+wd/wd_in)/2
-													else:
-														area=wd_in=ht_in=ratio=np.nan
-													inners_areas[cell_name].append(area)
-													inners_heights[cell_name].append(ht_in)
-													inners_widths[cell_name].append(wd_in)
-													inners_out_ratio[cell_name].append(ratio)
+									goodmasks=[cell_masks[x] for x,score in enumerate(cell_scores) if score>=self.detection_threshold[cell_name]]
+
+									if len(goodmasks)>0:
+
+										for mask in goodmasks:
+											mask=cv2.morphologyEx(mask,cv2.MORPH_CLOSE,np.ones((5,5),np.uint8))
+											if self.expansion is not None:
+												mask=cv2.dilate(mask,np.ones((5,5),np.uint8),iterations=self.expansion)
+											cnts,_=cv2.findContours((mask*255).astype(np.uint8),cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_NONE)
+											if len(cnts)>0:
+												cnt=sorted(cnts,key=cv2.contourArea,reverse=True)[0]
+												area=np.sum(np.array(mask),axis=(0,1))
+												perimeter=cv2.arcLength(cnt,closed=True)
+												roundness=(4*np.pi*area)/(perimeter*perimeter)
+												(_,_),(wd,ht),_=cv2.minAreaRect(cnt)
+												intensity=np.sum(analysis_fov*cv2.cvtColor(mask,cv2.COLOR_GRAY2BGR))/max(area,1)
+												if 'area' in self.filters:
+													if area<self.filters['area'][0] or area>self.filters['area'][1]:
+														continue
+												if 'perimeter' in self.filters:
+													if perimeter<self.filters['perimeter'][0] or perimeter>self.filters['perimeter'][1]:
+														continue
+												if 'roundness' in self.filters:
+													if roundness<self.filters['roundness'][0] or roundness>self.filters['roundness'][1]:
+														continue
+												if 'height' in self.filters:
+													if ht<self.filters['height'][0] or ht>self.filters['height'][1]:
+														continue
+												if 'width' in self.filters:
+													if wd<self.filters['width'][0] or wd>self.filters['width'][1]:
+														continue
+												if area>0:
+													cell_numbers[cell_name]+=1
+													cx=int(cv2.moments(cnt)['m10']/cv2.moments(cnt)['m00'])+int(w*self.fov_dim)
+													cy=int(cv2.moments(cnt)['m01']/cv2.moments(cnt)['m00'])+int(h*self.fov_dim)
+													cell_centers[cell_name].append((cx,cy))
+													cell_areas[cell_name].append(area)
+													cell_heights[cell_name].append(ht)
+													cell_widths[cell_name].append(wd)
+													cell_perimeter[cell_name].append(perimeter)
+													cell_roundness[cell_name].append(roundness)
+													cell_intensities[cell_name].append(intensity)
+													cv2.drawContours(to_annotate,[cnt],0,color,thickness)
+													if self.show_ids:
+														cx-=int(w*self.fov_dim)
+														cy-=int(h*self.fov_dim)
+														cv2.putText(to_annotate,str(len(cell_centers[cell_name])),(cx,cy),cv2.FONT_HERSHEY_SIMPLEX,thickness,color,thickness)
+													total_cell_area[cell_name]+=area
+													if self.inners is not None:
+														if self.inners=='white':
+															thred=cv2.threshold(cv2.cvtColor(detect_fov,cv2.COLOR_BGR2GRAY)*mask,0,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)[1]
+														else:
+															thred=cv2.threshold(cv2.cvtColor(detect_fov,cv2.COLOR_BGR2GRAY)*mask,0,255,cv2.THRESH_BINARY_INV+cv2.THRESH_OTSU)[1]
+														cnts,_=cv2.findContours(thred,cv2.RETR_LIST,cv2.CHAIN_APPROX_NONE)
+														if len(cnts)>2:
+															cnt=sorted(cnts,key=cv2.contourArea,reverse=True)[2]
+															cv2.drawContours(to_annotate,[cnt],0,color,thickness)
+															area=np.count_nonzero(thred)
+															(_,_),(wd_in,ht_in),_=cv2.minAreaRect(cnt)
+															ratio=(ht/ht_in+wd/wd_in)/2
+														else:
+															area=wd_in=ht_in=ratio=np.nan
+														inners_areas[cell_name].append(area)
+														inners_heights[cell_name].append(ht_in)
+														inners_widths[cell_name].append(wd_in)
+														inners_out_ratio[cell_name].append(ratio)
 
 					cv2.imwrite(os.path.join(self.results_path,os.path.splitext(os.path.basename(self.path_to_file))[0]+'_'+str(w)+str(h)+'_annotated.jpg'),to_annotate)
 
