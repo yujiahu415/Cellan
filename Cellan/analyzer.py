@@ -215,9 +215,9 @@ class AnalyzeCells():
 		total_cell_area={}
 		total_foreground_area=0
 		if self.inners is not None:
+			inners_areas={}
 			inners_heights={}
 			inners_widths={}
-			inners_areas={}
 			inners_out_ratio={}
 
 		for cell_name in self.cell_kinds:
@@ -231,9 +231,9 @@ class AnalyzeCells():
 			cell_intensities[cell_name]=[]
 			total_cell_area[cell_name]=0
 			if self.inners is not None:
+				inners_areas[cell_name]=[]
 				inners_heights[cell_name]=[]
 				inners_widths[cell_name]=[]
-				inners_areas[cell_name]=[]
 				inners_out_ratio[cell_name]=[]
 
 		image=imread(self.path_to_file)
@@ -357,7 +357,11 @@ class AnalyzeCells():
 													if len(cnts)>2:
 														cnt=sorted(cnts,key=cv2.contourArea,reverse=True)[2]
 														cv2.drawContours(to_annotate,[cnt],0,color,thickness)
-														inners_centers[cell_name]
+														area=np.count_nonzero(thred)
+														(_,_),(wd_in,ht_in),_=cv2.minAreaRect(cnt)
+														inners_heights[cell_name].append(ht_in)
+														inners_widths[cell_name].append(wd_in)
+														inners_out_ratio[cell_name].append((ht/ht_in+wd/wd_in)/2)
 
 												
 
@@ -377,9 +381,9 @@ class AnalyzeCells():
 				dfs.append(pd.DataFrame(cell_roundness[cell_name],columns=['roundness']).reset_index(drop=True))
 				dfs.append(pd.DataFrame(cell_intensities[cell_name],columns=['intensities']).reset_index(drop=True))
 				if self.inners is not None:
+					dfs.append(pd.DataFrame(inners_areas[cell_name],columns=['inners_areas']).reset_index(drop=True))
 					dfs.append(pd.DataFrame(inners_heights[cell_name],columns=['inners_heights']).reset_index(drop=True))
 					dfs.append(pd.DataFrame(inners_widths[cell_name],columns=['inners_widths']).reset_index(drop=True))
-					dfs.append(pd.DataFrame(inners_areas[cell_name],columns=['inners_areas']).reset_index(drop=True))
 					dfs.append(pd.DataFrame(inners_out_ratio[cell_name],columns=['inneroutter_ratio']).reset_index(drop=True))
 			else:
 				dfs.append(pd.DataFrame(['NA'],columns=['number']).reset_index(drop=True))
@@ -391,9 +395,9 @@ class AnalyzeCells():
 				dfs.append(pd.DataFrame(['NA'],columns=['roundness']).reset_index(drop=True))
 				dfs.append(pd.DataFrame(['NA'],columns=['intensities']).reset_index(drop=True))
 				if self.inners is not None:
+					dfs.append(pd.DataFrame(['NA'],columns=['inners_areas']).reset_index(drop=True))
 					dfs.append(pd.DataFrame(['NA'],columns=['inners_heights']).reset_index(drop=True))
 					dfs.append(pd.DataFrame(['NA'],columns=['inners_widths']).reset_index(drop=True))
-					dfs.append(pd.DataFrame(['NA'],columns=['inners_areas']).reset_index(drop=True))
 					dfs.append(pd.DataFrame(['NA'],columns=['inneroutter_ratio']).reset_index(drop=True))
 			out_sheet=os.path.join(self.results_path,os.path.splitext(os.path.basename(self.path_to_file))[0]+'_'+cell_name+'_summary.xlsx')
 			pd.concat(dfs,axis=1).to_excel(out_sheet,float_format='%.2f',index_label='ID/parameter')
