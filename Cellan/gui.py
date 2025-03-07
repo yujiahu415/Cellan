@@ -1696,7 +1696,7 @@ class WindowLv2_AnalyzeSingleChannel(wx.Frame):
 
 	def __init__(self,title):
 
-		super(WindowLv2_AnalyzeSingleChannel,self).__init__(parent=None,title=title,size=(1000,280))
+		super(WindowLv2_AnalyzeSingleChannel,self).__init__(parent=None,title=title,size=(1000,320))
 		self.detector_path=None
 		self.path_to_detector=None
 		self.cell_kinds=None
