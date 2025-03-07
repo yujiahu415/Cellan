@@ -1629,6 +1629,19 @@ class WindowLv2_AnalyzeMultiChannels(wx.Frame):
 			self.text_detection.SetLabel('Detector: '+detector+'; '+'The cell kinds / detection threshold: '+str(self.detection_threshold)+'.')
 		dialog.Destroy()
 
+		if self.path_to_detector is not None:
+			dialog=wx.MessageDialog(self,'Detect the outlines of inner structures?\n(Can be useful to calculate, e.g. G-ratios)','Detect inner structures?',wx.YES_NO|wx.ICON_QUESTION)
+			if dialog.ShowModal()==wx.ID_YES:
+				dialog1=wx.MessageDialog(self,'Is the inner structures brighter?','Brighter inner structures?',wx.YES_NO|wx.ICON_QUESTION)
+				if dialog1.ShowModal()==wx.ID_YES:
+					self.inners='white'
+				else:
+					self.inners='black'
+				dialog1.Destroy()
+			else:
+				self.inners=None
+			dialog.Destroy()
+
 
 	def specify_expansion(self,event):
 
@@ -1875,6 +1888,19 @@ class WindowLv2_AnalyzeSingleChannel(wx.Frame):
 				dialog1.Destroy()
 			self.text_detection.SetLabel('Detector: '+detector+'; '+'The cell kinds / detection threshold: '+str(self.detection_threshold)+'.')
 		dialog.Destroy()
+
+		if self.path_to_detector is not None:
+			dialog=wx.MessageDialog(self,'Detect the outlines of inner structures?\n(Can be useful to calculate, e.g. G-ratios)','Detect inner structures?',wx.YES_NO|wx.ICON_QUESTION)
+			if dialog.ShowModal()==wx.ID_YES:
+				dialog1=wx.MessageDialog(self,'Is the inner structures brighter?','Brighter inner structures?',wx.YES_NO|wx.ICON_QUESTION)
+				if dialog1.ShowModal()==wx.ID_YES:
+					self.inners='white'
+				else:
+					self.inners='black'
+				dialog1.Destroy()
+			else:
+				self.inners=None
+			dialog.Destroy()
 
 
 	def specify_filters(self,event):
