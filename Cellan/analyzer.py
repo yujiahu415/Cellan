@@ -13,7 +13,7 @@ from skimage import exposure
 
 class AnalyzeCells():
 
-	def __init__(self,path_to_file,results_path,path_to_detector,cell_kinds,names_colors,detection_threshold=None,expansion=None,show_ids=False,filters={},inners=False):
+	def __init__(self,path_to_file,results_path,path_to_detector,cell_kinds,names_colors,detection_threshold=None,expansion=None,show_ids=False,filters={},inners=None):
 
 		self.path_to_file=path_to_file
 		self.results_path=os.path.join(results_path,os.path.splitext(os.path.basename(self.path_to_file))[0])
@@ -214,7 +214,7 @@ class AnalyzeCells():
 		cell_intensities={}
 		total_cell_area={}
 		total_foreground_area=0
-		if self.inners:
+		if self.inners is not None:
 			inners_centers={}
 			inners_heights={}
 			inners_widths={}
@@ -230,7 +230,7 @@ class AnalyzeCells():
 			cell_roundness[cell_name]=[]
 			cell_intensities[cell_name]=[]
 			total_cell_area[cell_name]=0
-			if self.inners:
+			if self.inners is not None:
 				inners_centers[cell_name]=[]
 				inners_heights[cell_name]=[]
 				inners_widths[cell_name]=[]
@@ -313,7 +313,7 @@ class AnalyzeCells():
 											cnt=sorted(cnts,key=cv2.contourArea,reverse=True)[0]
 											area=np.sum(np.array(mask),axis=(0,1))
 											perimeter=cv2.arcLength(cnt,closed=True)
-											roundness=perimeter*perimeter/(4*np.pi*area)
+											roundness=(4*np.pi*area)/(perimeter*perimeter)
 											(_,_),(wd,ht),_=cv2.minAreaRect(cnt)
 											intensity=np.sum(analysis_fov*cv2.cvtColor(mask,cv2.COLOR_GRAY2BGR))/max(area,1)
 											if 'area' in self.filters:
@@ -348,8 +348,13 @@ class AnalyzeCells():
 													cy-=int(h*self.fov_dim)
 													cv2.putText(to_annotate,str(len(cell_centers[cell_name])),(cx,cy),cv2.FONT_HERSHEY_SIMPLEX,thickness,color,thickness)
 												total_cell_area[cell_name]+=area
-												if self.inners:
-													cnts,_=cv2.findContours((mask*255).astype(np.uint8),cv2.RETR_LIST,cv2.CHAIN_APPROX_NONE)
+												if self.inners is not None:
+													if self.inners=='white':
+														thred=cv2.threshold(cv2.cvtColor(detect_fov,cv2.COLOR_BGR2GRAY)*mask,0,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)[1]
+													else:
+														thred=cv2.threshold(cv2.cvtColor(detect_fov,cv2.COLOR_BGR2GRAY)*mask,0,255,cv2.THRESH_BINARY_INV+cv2.THRESH_OTSU)[1]
+													cnts,_=cv2.findContours(thred,cv2.RETR_LIST,cv2.CHAIN_APPROX_NONE)
+												
 
 
 					cv2.imwrite(os.path.join(self.results_path,os.path.splitext(os.path.basename(self.path_to_file))[0]+'_'+str(w)+str(h)+'_annotated.jpg'),to_annotate)
@@ -366,7 +371,7 @@ class AnalyzeCells():
 				dfs.append(pd.DataFrame(cell_perimeter[cell_name],columns=['perimeter']).reset_index(drop=True))
 				dfs.append(pd.DataFrame(cell_roundness[cell_name],columns=['roundness']).reset_index(drop=True))
 				dfs.append(pd.DataFrame(cell_intensities[cell_name],columns=['intensities']).reset_index(drop=True))
-				if self.inners:
+				if self.inners is not None:
 					dfs.append(pd.DataFrame(inners_centers[cell_name],columns=['inner_center_x','inner_center_y']).reset_index(drop=True))
 					dfs.append(pd.DataFrame(inners_heights[cell_name],columns=['inners_heights']).reset_index(drop=True))
 					dfs.append(pd.DataFrame(inners_widths[cell_name],columns=['inners_widths']).reset_index(drop=True))
@@ -380,7 +385,7 @@ class AnalyzeCells():
 				dfs.append(pd.DataFrame(['NA'],columns=['perimeter']).reset_index(drop=True))
 				dfs.append(pd.DataFrame(['NA'],columns=['roundness']).reset_index(drop=True))
 				dfs.append(pd.DataFrame(['NA'],columns=['intensities']).reset_index(drop=True))
-				if self.inners:
+				if self.inners is not None:
 					dfs.append(pd.DataFrame([('NA','NA')],columns=['inner_center_x','inner_center_y']).reset_index(drop=True))
 					dfs.append(pd.DataFrame(['NA'],columns=['inners_heights']).reset_index(drop=True))
 					dfs.append(pd.DataFrame(['NA'],columns=['inners_widths']).reset_index(drop=True))
