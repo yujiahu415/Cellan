@@ -314,7 +314,7 @@ class AnalyzeCells():
 											area=np.sum(np.array(mask),axis=(0,1))
 											perimeter=cv2.arcLength(cnt,closed=True)
 											roundness=perimeter*perimeter/(4*np.pi*area)
-											(_,_),(width,height),_=cv2.minAreaRect(cnt)
+											(_,_),(wd,ht),_=cv2.minAreaRect(cnt)
 											intensity=np.sum(analysis_fov*cv2.cvtColor(mask,cv2.COLOR_GRAY2BGR))/area
 											if 'area' in self.filters:
 												if area<self.filters['area'][0] or area>self.filters['area'][1]:
@@ -326,10 +326,10 @@ class AnalyzeCells():
 												if roundness<self.filters['roundness'][0] or roundness>self.filters['roundness'][1]:
 													continue
 											if 'width' in self.filters:
-												if width<self.filters['width'][0] or width>self.filters['width'][1]:
+												if wd<self.filters['width'][0] or wd>self.filters['width'][1]:
 													continue
 											if 'height' in self.filters:
-												if height<self.filters['height'][0] or height>self.filters['height'][1]:
+												if ht<self.filters['height'][0] or ht>self.filters['height'][1]:
 													continue
 											if area>0:
 												cell_numbers[cell_name]+=1
