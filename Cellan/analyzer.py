@@ -360,12 +360,15 @@ class AnalyzeCells():
 														else:
 															thred=cv2.threshold(cv2.cvtColor(detect_fov,cv2.COLOR_BGR2GRAY)*mask,0,255,cv2.THRESH_BINARY_INV+cv2.THRESH_OTSU)[1]
 														cnts,_=cv2.findContours(thred,cv2.RETR_LIST,cv2.CHAIN_APPROX_NONE)
-														if len(cnts)>2:
-															cnt=sorted(cnts,key=cv2.contourArea,reverse=True)[2]
+														if len(cnts)>1:
+															cnt=sorted(cnts,key=cv2.contourArea,reverse=True)[1]
 															cv2.drawContours(to_annotate,[cnt],0,color,thickness)
 															area=np.count_nonzero(thred)
 															(_,_),(wd_in,ht_in),_=cv2.minAreaRect(cnt)
-															ratio=(ht/ht_in+wd/wd_in)/2
+															if ht_in>0 and wd_in>0:
+																ratio=(ht/ht_in+wd/wd_in)/2
+															else:
+																ratio=np.nan
 														else:
 															area=wd_in=ht_in=ratio=np.nan
 														inners_areas[cell_name].append(area)
