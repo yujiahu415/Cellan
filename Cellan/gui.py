@@ -1890,7 +1890,7 @@ class WindowLv2_AnalyzeSingleChannel(wx.Frame):
 		dialog.Destroy()
 
 		if self.path_to_detector is not None:
-			dialog=wx.MessageDialog(self,'Detect the outlines of inner structures?\n(Can be useful to calculate, e.g. G-ratios)','Detect inner structures?',wx.YES_NO|wx.ICON_QUESTION)
+			dialog=wx.MessageDialog(self,'Detect the outlines of inner structures?','Detect inner structures?',wx.YES_NO|wx.ICON_QUESTION)
 			if dialog.ShowModal()==wx.ID_YES:
 				dialog1=wx.MessageDialog(self,'Is the inner structures brighter?','Brighter inner structures?',wx.YES_NO|wx.ICON_QUESTION)
 				if dialog1.ShowModal()==wx.ID_YES:
