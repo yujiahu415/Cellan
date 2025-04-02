@@ -182,7 +182,7 @@ def preprocess_image(path_to_image,out_folder,downsize_factor,enhance_contrast=T
 	if extension in ['.svs','.SVS']:
 		imwrite(os.path.join(out_folder,name+'_processed.tif'),image,photometric='rgb')
 	else:
-		pass
+		imwrite(os.path.join(out_folder,name+'_processed.tif'),image,photometric='rgb')
 
 	print('The processed image(s) stored in: '+out_folder)
 
