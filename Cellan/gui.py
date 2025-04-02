@@ -159,124 +159,6 @@ class WindowLv1_ProcessModule(wx.Frame):
 
 
 
-class WindowLv1_TrainingModule(wx.Frame):
-
-	def __init__(self,title):
-
-		super(WindowLv1_TrainingModule,self).__init__(parent=None,title=title,size=(500,350))
-		self.dispaly_window()
-
-
-	def dispaly_window(self):
-
-		panel=wx.Panel(self)
-		boxsizer=wx.BoxSizer(wx.VERTICAL)
-		boxsizer.Add(0,60,0)
-
-		button_generateimages=wx.Button(panel,label='Generate Image Examples',size=(300,40))
-		button_generateimages.Bind(wx.EVT_BUTTON,self.generate_images)
-		wx.Button.SetToolTip(button_generateimages,
-			'Extract images from LIF/TIF/SVS/QPTIFF files for annotation of the cells of your interest. See Extended Guide for how to select images to annotate.')
-		boxsizer.Add(button_generateimages,0,wx.ALIGN_CENTER,10)
-		boxsizer.Add(0,5,0)
-
-		link_annotate=wx.lib.agw.hyperlink.HyperLinkCtrl(panel,0,'\nAnnotate images with Roboflow\n',URL='https://roboflow.com')
-		boxsizer.Add(link_annotate,0,wx.ALIGN_CENTER,10)
-		boxsizer.Add(0,5,0)
-
-		button_traindetectors=wx.Button(panel,label='Train Detectors',size=(300,40))
-		button_traindetectors.Bind(wx.EVT_BUTTON,self.train_detectors)
-		wx.Button.SetToolTip(button_traindetectors,
-			'The trained Detectors can detect the cells of your interest. See Extended Guide for how to set parameters for training.')
-		boxsizer.Add(button_traindetectors,0,wx.ALIGN_CENTER,10)
-		boxsizer.Add(0,5,0)
-
-		button_testdetectors=wx.Button(panel,label='Test Detectors',size=(300,40))
-		button_testdetectors.Bind(wx.EVT_BUTTON,self.test_detectors)
-		wx.Button.SetToolTip(button_testdetectors,
-			'Test trained Detectors on the annotated ground-truth image dataset (similar to the image dataset used for training a Detector).')
-		boxsizer.Add(button_testdetectors,0,wx.ALIGN_CENTER,10)
-		boxsizer.Add(0,50,0)
-
-		panel.SetSizer(boxsizer)
-
-		self.Centre()
-		self.Show(True)
-
-
-	def generate_images(self,event):
-
-		WindowLv2_GenerateImages('Generate Image Examples')
-
-
-	def train_detectors(self,event):
-
-		WindowLv2_TrainDetectors('Train Detectors')
-
-
-	def test_detectors(self,event):
-
-		WindowLv2_TestDetectors('Test Detectors')
-
-
-
-class WindowLv1_AnalysisModule(wx.Frame):
-
-	def __init__(self,title):
-
-		super(WindowLv1_AnalysisModule,self).__init__(parent=None,title=title,size=(500,295))
-		self.dispaly_window()
-
-
-	def dispaly_window(self):
-
-		panel=wx.Panel(self)
-		boxsizer=wx.BoxSizer(wx.VERTICAL)
-		boxsizer.Add(0,60,0)
-
-		button_analyzemultichannels=wx.Button(panel,label='Analyze Multichannel Images',size=(300,40))
-		button_analyzemultichannels.Bind(wx.EVT_BUTTON,self.analyze_multichannels)
-		wx.Button.SetToolTip(button_analyzemultichannels,
-			'Automatically detect cells of your interest and analyze their numbers, areas, and pixel intensities in multi-channel images.')
-		boxsizer.Add(button_analyzemultichannels,0,wx.ALIGN_CENTER,10)
-		boxsizer.Add(0,5,0)
-
-		button_analyzesinglechannel=wx.Button(panel,label='Analyze Singlechannel Images',size=(300,40))
-		button_analyzesinglechannel.Bind(wx.EVT_BUTTON,self.analyze_singlechannels)
-		wx.Button.SetToolTip(button_analyzesinglechannel,
-			'Automatically detect cells of your interest and analyze their numbers, areas, and pixel intensities in single-channel images.')
-		boxsizer.Add(button_analyzesinglechannel,0,wx.ALIGN_CENTER,10)
-		boxsizer.Add(0,5,0)
-
-		button_calculateintensities=wx.Button(panel,label='Calculate Channel Intensities',size=(300,40))
-		button_calculateintensities.Bind(wx.EVT_BUTTON,self.calculate_intensities)
-		wx.Button.SetToolTip(button_calculateintensities,
-			'Calculate total intensity of each channel in images.')
-		boxsizer.Add(button_calculateintensities,0,wx.ALIGN_CENTER,10)
-		boxsizer.Add(0,50,0)
-
-		panel.SetSizer(boxsizer)
-
-		self.Centre()
-		self.Show(True)
-
-
-	def analyze_multichannels(self,event):
-
-		WindowLv2_AnalyzeMultiChannels('Analyze Multichannel Images')
-
-
-	def analyze_singlechannels(self,event):
-
-		WindowLv2_AnalyzeSingleChannel('Analyze Singlechannel Images')
-
-
-	def calculate_intensities(self,event):
-
-		WindowLv2_CalculateTotalIntensity('Calculate Channel Intensities')
-
-
-
 class WindowLv2_ProcessImages(wx.Frame):
 
 	def __init__(self,title):
@@ -431,7 +313,6 @@ class WindowLv2_ProcessImages(wx.Frame):
 			else:
 				image=tifffile.imread(self.path_to_images[0])
 
-
 			if self.downsize_factor is not None:
 				if extension in ['.lif','.LIF']:
 					pass
@@ -456,10 +337,28 @@ class WindowLv2_ProcessImages(wx.Frame):
 							rgb_channels.append(rgb_channel)
 						image=np.mean(rgb_channels,axis=0).astype(np.uint8)
 
-
-
 				elif extension in ['.qptiff','.QPTIFF']:
-					pass
+					if len(list(image.shape))<3:
+						image=cv2.resize(image,(int(image.shape[1]*self.downsize_factor/100),int(image.shape[0]*self.downsize_factor/100)),interpolation=cv2.INTER_AREA)
+					else:
+						page=tifffile.TiffFile(self.path_to_images[0]).pages[0]
+						num_channels=image.shape[0]
+						lut_available=page.photometric==tifffile.PHOTOMETRIC.PALETTE
+						rgb_channels=[]
+						for c in range(num_channels):
+							if lut_available:
+								lut=page.colormap
+								channel_data=image[c,...]
+								rgb_channel=np.zeros((*image.shape,3),dtype=np.uint8)
+								for i in range(3):
+									rgb_channel[...,i]=lut[i,image]//256
+							else:
+								cmap=cm.rainbow(c/(num_channels-1))
+								rgb_channel=cm.ScalarMappable(cmap=cm.rainbow).to_rgba(image,bytes=True)[:,:,:3]
+							rgb_channels.append(rgb_channel)
+						image=np.mean(rgb_channels,axis=0).astype(np.uint8)
+						image=cv2.resize(image,(int(image.shape[1]*self.downsize_factor/100),int(image.shape[0]*self.downsize_factor/100)),interpolation=cv2.INTER_AREA)
+
 				else:
 					image=cv2.resize(image,(int(image.shape[1]*self.downsize_factor/100),int(image.shape[0]*self.downsize_factor/100)),interpolation=cv2.INTER_AREA)
 
@@ -987,6 +886,128 @@ class WindowLv3_DrawMarkers(wx.Frame):
 
 
 			print('Marker Drawing completed!')
+
+
+
+class WindowLv1_TrainingModule(wx.Frame):
+
+	def __init__(self,title):
+
+		super(WindowLv1_TrainingModule,self).__init__(parent=None,title=title,size=(500,350))
+		self.dispaly_window()
+
+
+	def dispaly_window(self):
+
+		panel=wx.Panel(self)
+		boxsizer=wx.BoxSizer(wx.VERTICAL)
+		boxsizer.Add(0,60,0)
+
+		button_generateimages=wx.Button(panel,label='Generate Image Examples',size=(300,40))
+		button_generateimages.Bind(wx.EVT_BUTTON,self.generate_images)
+		wx.Button.SetToolTip(button_generateimages,
+			'Extract images from LIF/TIF/SVS/QPTIFF files for annotation of the cells of your interest. See Extended Guide for how to select images to annotate.')
+		boxsizer.Add(button_generateimages,0,wx.ALIGN_CENTER,10)
+		boxsizer.Add(0,5,0)
+
+		link_annotate=wx.lib.agw.hyperlink.HyperLinkCtrl(panel,0,'\nAnnotate images with Roboflow\n',URL='https://roboflow.com')
+		boxsizer.Add(link_annotate,0,wx.ALIGN_CENTER,10)
+		boxsizer.Add(0,5,0)
+
+		button_traindetectors=wx.Button(panel,label='Train Detectors',size=(300,40))
+		button_traindetectors.Bind(wx.EVT_BUTTON,self.train_detectors)
+		wx.Button.SetToolTip(button_traindetectors,
+			'The trained Detectors can detect the cells of your interest. See Extended Guide for how to set parameters for training.')
+		boxsizer.Add(button_traindetectors,0,wx.ALIGN_CENTER,10)
+		boxsizer.Add(0,5,0)
+
+		button_testdetectors=wx.Button(panel,label='Test Detectors',size=(300,40))
+		button_testdetectors.Bind(wx.EVT_BUTTON,self.test_detectors)
+		wx.Button.SetToolTip(button_testdetectors,
+			'Test trained Detectors on the annotated ground-truth image dataset (similar to the image dataset used for training a Detector).')
+		boxsizer.Add(button_testdetectors,0,wx.ALIGN_CENTER,10)
+		boxsizer.Add(0,50,0)
+
+		panel.SetSizer(boxsizer)
+
+		self.Centre()
+		self.Show(True)
+
+
+	def generate_images(self,event):
+
+		WindowLv2_GenerateImages('Generate Image Examples')
+
+
+	def train_detectors(self,event):
+
+		WindowLv2_TrainDetectors('Train Detectors')
+
+
+	def test_detectors(self,event):
+
+		WindowLv2_TestDetectors('Test Detectors')
+
+
+
+class WindowLv1_AnalysisModule(wx.Frame):
+
+	def __init__(self,title):
+
+		super(WindowLv1_AnalysisModule,self).__init__(parent=None,title=title,size=(500,295))
+		self.dispaly_window()
+
+
+	def dispaly_window(self):
+
+		panel=wx.Panel(self)
+		boxsizer=wx.BoxSizer(wx.VERTICAL)
+		boxsizer.Add(0,60,0)
+
+		button_analyzemultichannels=wx.Button(panel,label='Analyze Multichannel Images',size=(300,40))
+		button_analyzemultichannels.Bind(wx.EVT_BUTTON,self.analyze_multichannels)
+		wx.Button.SetToolTip(button_analyzemultichannels,
+			'Automatically detect cells of your interest and analyze their numbers, areas, and pixel intensities in multi-channel images.')
+		boxsizer.Add(button_analyzemultichannels,0,wx.ALIGN_CENTER,10)
+		boxsizer.Add(0,5,0)
+
+		button_analyzesinglechannel=wx.Button(panel,label='Analyze Singlechannel Images',size=(300,40))
+		button_analyzesinglechannel.Bind(wx.EVT_BUTTON,self.analyze_singlechannels)
+		wx.Button.SetToolTip(button_analyzesinglechannel,
+			'Automatically detect cells of your interest and analyze their numbers, areas, and pixel intensities in single-channel images.')
+		boxsizer.Add(button_analyzesinglechannel,0,wx.ALIGN_CENTER,10)
+		boxsizer.Add(0,5,0)
+
+		button_calculateintensities=wx.Button(panel,label='Calculate Channel Intensities',size=(300,40))
+		button_calculateintensities.Bind(wx.EVT_BUTTON,self.calculate_intensities)
+		wx.Button.SetToolTip(button_calculateintensities,
+			'Calculate total intensity of each channel in images.')
+		boxsizer.Add(button_calculateintensities,0,wx.ALIGN_CENTER,10)
+		boxsizer.Add(0,50,0)
+
+		panel.SetSizer(boxsizer)
+
+		self.Centre()
+		self.Show(True)
+
+
+	def analyze_multichannels(self,event):
+
+		WindowLv2_AnalyzeMultiChannels('Analyze Multichannel Images')
+
+
+	def analyze_singlechannels(self,event):
+
+		WindowLv2_AnalyzeSingleChannel('Analyze Singlechannel Images')
+
+
+	def calculate_intensities(self,event):
+
+		WindowLv2_CalculateTotalIntensity('Calculate Channel Intensities')
+
+
+
+
 
 
 
