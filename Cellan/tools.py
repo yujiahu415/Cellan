@@ -166,7 +166,7 @@ def preprocess_image(path_to_image,out_folder,downsize_factor,enhance_contrast=T
 	
 	if downsize_factor is not None:
 		if extension in ['.qptiff','.QPTIFF']:
-			pass
+			image=cv2.resize(image,(int(width*downsize_factor/100),int(height*downsize_factor/100)),interpolation=cv2.INTER_AREA)
 		else:
 			image=cv2.resize(image,(int(width*downsize_factor/100),int(height*downsize_factor/100)),interpolation=cv2.INTER_AREA)
 
