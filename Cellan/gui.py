@@ -1281,7 +1281,7 @@ class WindowLv2_TrainDetectors(wx.Frame):
 					self.num_rois=1024
 			dialog.Destroy()
 
-			images=[i for i in os.listdir(self.path_to_trainingimages) if i.endswith('.jpg')]
+			images=[i for i in os.listdir(self.path_to_trainingimages) if i.endswith('.jpg') or i.endswith('.png') or i.endswith('.tif') or i.endswith('.tiff')]
 			self.inference_size=int(cv2.imread(os.path.join(self.path_to_trainingimages,images[0])).shape[1])
 
 			do_nothing=False
