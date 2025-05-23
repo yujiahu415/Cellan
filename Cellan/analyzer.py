@@ -207,6 +207,9 @@ class AnalyzeCells():
 
 	def analyze_singlechannel(self):
 
+		data={}
+		parameters=['center','area','height','width','perimeter','roundness','intensity']
+
 		cell_numbers={}
 		cell_centers={}
 		cell_areas={}
