@@ -214,7 +214,7 @@ class AnalyzeCells():
 
 		for cell_name in self.cell_kinds:
 			data[cell_name]={}
-			data[cell_name][total_cell_area]=0
+			data[cell_name]['total_cell_area']=0
 			for parameter in parameters:
 				data[cell_name][parameter]=[]
 
@@ -336,8 +336,8 @@ class AnalyzeCells():
 													annotation['class_names'].append(cell_name)
 													cv2.drawContours(to_annotate,[cnt],0,color,thickness)
 													if self.show_ids:
-														cv2.putText(to_annotate,str(len(cell_centers[cell_name])),(cx,cy),cv2.FONT_HERSHEY_SIMPLEX,thickness,color,thickness)
-													total_cell_area[cell_name]+=area
+														cv2.putText(to_annotate,str(len(data[cell_name]['center'])),(cx,cy),cv2.FONT_HERSHEY_SIMPLEX,thickness,color,thickness)
+													data[cell_name]['total_cell_area']+=area
 
 		cv2.imwrite(os.path.join(self.results_path,os.path.splitext(image_name)[0]+'_annotated'+image_name.split('.')[-1]),to_annotate)
 
