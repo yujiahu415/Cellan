@@ -6,7 +6,7 @@ import datetime
 import numpy as np
 import pandas as pd
 from readlif.reader import LifFile
-from tifffile import imread
+from tifffile import imread,imwrite
 from skimage import exposure
 
 
@@ -365,6 +365,175 @@ class AnalyzeCells():
 				dfs['area_ratio']=total_cell_area[cell_name]/total_foreground_area
 				dfs=pd.DataFrame(dfs,index=['value'])
 				df.to_excel(writer,sheet_name=cell_name,float_format='%.6f')
+
+		coco_format={'categories':[],'images':[],'annotations':[]}
+
+		for i,cell_name in enumerate(self.cell_kinds):
+			coco_format['categories'].append({
+				'id':i+1,
+				'name':cell_name,
+				'supercategory':'none'})
+
+		image_id=0
+		annotation_id=0
+		parent_path=os.path.dirname(self.image_paths[0])
+
+		for image_name in self.information:
+
+			random.shuffle(methods)
+
+			for m in methods:
+
+				image=cv2.imread(os.path.join(parent_path,image_name))
+				image_width=image.shape[1]
+				image_height=image.shape[0]
+
+				if 'rot1' in m:
+					angle=np.random.uniform(5,45)
+				elif 'rot2' in m:
+					angle=np.random.uniform(45,85)
+				elif 'rot3' in m:
+					angle=90.0
+				elif 'rot4' in m:
+					angle=np.random.uniform(95,135)
+				elif 'rot5' in m:
+					angle=np.random.uniform(135,175)
+				elif 'rot6' in m:
+					angle=180.0
+				elif 'rot7' in m:
+					angle=np.random.uniform(5,175)
+				else:
+					angle=None
+
+				if 'flphflpv' in m:
+					code=-1
+				elif 'flph' in m:
+					code=1
+				elif 'flpv' in m:
+					code=0
+				else:
+					code=None
+
+				if 'brihbril' in m:
+					beta=np.random.uniform(0.6,1.6)
+				elif 'brih' in m:
+					beta=np.random.uniform(1.1,1.6)
+				elif 'bril' in m:
+					beta=np.random.uniform(0.6,0.9)
+				else:
+					beta=None
+
+				if 'exphexpl' in m:
+					expo=np.random.uniform(-25,25)
+				elif 'exph' in m:
+					expo=np.random.uniform(10,25)
+				elif 'expl' in m:
+					expo=np.random.uniform(-25,-10)
+				else:
+					expo=None
+
+				if 'blur' in m:
+					blur=random.choice([1,3,5])
+				else:
+					blur=None
+
+				if code is not None:
+					image=cv2.flip(image,code)
+
+				if beta is not None:
+					image=image.astype('float')
+					image=image*beta
+					image=np.uint8(np.clip(image,0,255))
+
+				if expo is not None:
+					image=image.astype('float')
+					image+=expo
+					image=np.uint8(np.clip(image,0,255))
+
+				if angle is not None:
+					image=rotate(image,angle,reshape=False,prefilter=False)
+
+				if blur is not None:
+					image=cv2.GaussianBlur(image,(blur,blur),0)
+
+				new_name=image_name.split('.'+image_name.split('.')[-1])[0]+str(m)+'.'+image_name.split('.')[-1]
+				cv2.imwrite(os.path.join(self.result_path,new_name),image)
+
+				coco_format['images'].append({
+					'id':image_id,
+					'width':image.shape[1],
+					'height':image.shape[0],
+					'file_name':new_name})
+
+				polygons=self.information[image_name]['polygons']
+
+				if len(polygons)>0:
+
+					for j,polygon in enumerate(self.information[image_name]['polygons']):
+
+						category_id=sorted(list(self.color_map.keys())).index(self.information[image_name]['class_names'][j])+1
+						segmentation=[np.array(polygon).flatten().tolist()]
+						area=self.compute_area(polygon)
+						bbox=self.compute_bbox(polygon)
+
+						if code is not None or angle is not None:
+
+							new_segmentation=[]
+							for seg in segmentation:
+								transformed_seg=[]
+								for i in range(0,len(seg),2):
+									if code==1:
+										x=image_width-seg[i]
+										y=seg[i+1]
+									elif code==0:
+										x=seg[i]
+										y=image_height-seg[i+1]
+									elif code==-1:
+										x=image_width-seg[i]
+										y=image_height-seg[i+1]
+									else:
+										x=seg[i]
+										y=seg[i+1]
+									if angle is not None:
+										x,y=self.rotate_point(x,y,image_width/2,image_height/2,angle,image_width,image_height)
+									transformed_seg.extend([int(x),int(y)])
+								new_segmentation.append(transformed_seg)
+							segmentation=new_segmentation
+
+							[x,y,w,h]=bbox
+							if code==1:
+								x=image_width-(x+w)
+							elif code==0:
+								y=image_height-(y+h)
+							elif code==-1:
+								x=image_width-(x+w)
+								y=image_height-(y+h)
+							if angle is not None:
+								box_points=np.array([[x,y],[x+w,y],[x,y+h],[x+w,y+h]])
+								rotated_box=np.array([self.rotate_point(px,py,image_width/2,image_height/2,angle,image_width,image_height) for px,py in box_points])
+								x,y=rotated_box.min(axis=0)
+								x_max,y_max=rotated_box.max(axis=0)
+								w=x_max-x
+								h=y_max-y
+							bbox=[int(x),int(y),int(w),int(h)]
+
+						coco_format['annotations'].append({
+							'id':annotation_id,
+							'image_id':image_id,
+							'category_id':category_id,
+							'segmentation':segmentation,
+							'area':area,
+							'bbox':bbox,
+							'iscrowd':0
+							})
+
+						annotation_id+=1
+
+				image_id+=1
+
+		with open(os.path.join(self.result_path,'annotations.json'),'w') as json_file:
+			json.dump(coco_format,json_file)
+		wx.MessageBox('Annotations exported successfully.','Success',wx.ICON_INFORMATION)
 
 		print('Analysis completed!')
 
