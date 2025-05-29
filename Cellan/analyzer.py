@@ -338,7 +338,7 @@ class AnalyzeCells():
 
 		cv2.imwrite(os.path.join(self.results_path,os.path.splitext(os.path.basename(self.path_to_file))[0]+'_annotated.jpg'),to_annotate)
 
-		with pd.ExcelWriter(os.path.join(out_path,'measurements.xlsx'),engine='openpyxl') as writer:
+		with pd.ExcelWriter(os.path.join(self.results_path,os.path.splitext(os.path.basename(self.path_to_file))[0]+'_summary.xlsx'),engine='openpyxl') as writer:
 
 			parameters.remove('segmentation')
 
@@ -355,47 +355,16 @@ class AnalyzeCells():
 				df=pd.DataFrame(rows,columns=columns)
 				df.to_excel(writer,sheet_name=cell_name,float_format='%.2f',index=False)
 
-		for cell_name in self.cell_kinds:
+		with pd.ExcelWriter(os.path.join(self.results_path,os.path.splitext(os.path.basename(self.path_to_file))[0]+'_arearatio.xlsx'),engine='openpyxl') as writer:
 
-			dfs=[]
-			if len(cell_centers[cell_name])>0:
-				dfs.append(pd.DataFrame([i+1 for i in range(len(cell_centers[cell_name]))],columns=['number']).reset_index(drop=True))
-				dfs.append(pd.DataFrame(cell_centers[cell_name],columns=['center_x','center_y']).reset_index(drop=True))
-				dfs.append(pd.DataFrame(cell_areas[cell_name],columns=['areas']).reset_index(drop=True))
-				dfs.append(pd.DataFrame(cell_heights[cell_name],columns=['heights']).reset_index(drop=True))
-				dfs.append(pd.DataFrame(cell_widths[cell_name],columns=['widths']).reset_index(drop=True))
-				dfs.append(pd.DataFrame(cell_perimeter[cell_name],columns=['perimeter']).reset_index(drop=True))
-				dfs.append(pd.DataFrame(cell_roundness[cell_name],columns=['roundness']).reset_index(drop=True))
-				dfs.append(pd.DataFrame(cell_intensities[cell_name],columns=['intensities']).reset_index(drop=True))
-				if self.inners is not None:
-					dfs.append(pd.DataFrame(inners_areas[cell_name],columns=['inners_areas']).reset_index(drop=True))
-					dfs.append(pd.DataFrame(inners_heights[cell_name],columns=['inners_heights']).reset_index(drop=True))
-					dfs.append(pd.DataFrame(inners_widths[cell_name],columns=['inners_widths']).reset_index(drop=True))
-					dfs.append(pd.DataFrame(inners_out_ratio[cell_name],columns=['inneroutter_ratio']).reset_index(drop=True))
-			else:
-				dfs.append(pd.DataFrame(['NA'],columns=['number']).reset_index(drop=True))
-				dfs.append(pd.DataFrame([('NA','NA')],columns=['center_x','center_y']).reset_index(drop=True))
-				dfs.append(pd.DataFrame(['NA'],columns=['areas']).reset_index(drop=True))
-				dfs.append(pd.DataFrame(['NA'],columns=['heights']).reset_index(drop=True))
-				dfs.append(pd.DataFrame(['NA'],columns=['widths']).reset_index(drop=True))
-				dfs.append(pd.DataFrame(['NA'],columns=['perimeter']).reset_index(drop=True))
-				dfs.append(pd.DataFrame(['NA'],columns=['roundness']).reset_index(drop=True))
-				dfs.append(pd.DataFrame(['NA'],columns=['intensities']).reset_index(drop=True))
-				if self.inners is not None:
-					dfs.append(pd.DataFrame(['NA'],columns=['inners_areas']).reset_index(drop=True))
-					dfs.append(pd.DataFrame(['NA'],columns=['inners_heights']).reset_index(drop=True))
-					dfs.append(pd.DataFrame(['NA'],columns=['inners_widths']).reset_index(drop=True))
-					dfs.append(pd.DataFrame(['NA'],columns=['inneroutter_ratio']).reset_index(drop=True))
-			out_sheet=os.path.join(self.results_path,os.path.splitext(os.path.basename(self.path_to_file))[0]+'_'+cell_name+'_summary.xlsx')
-			pd.concat(dfs,axis=1).to_excel(out_sheet,float_format='%.2f',index_label='ID/parameter')
+			for cell_name in self.cell_kinds:
 
-			dfs={}
-			dfs['total_area']=total_foreground_area
-			dfs[cell_name+'_area']=total_cell_area[cell_name]
-			dfs['area_ratio']=total_cell_area[cell_name]/total_foreground_area
-			dfs=pd.DataFrame(dfs,index=['value'])
-			out_sheet=os.path.join(self.results_path,os.path.splitext(os.path.basename(self.path_to_file))[0]+'_'+cell_name+'_arearatio.xlsx')
-			dfs.to_excel(out_sheet,float_format='%.6f')
+				dfs={}
+				dfs['total_area']=total_foreground_area
+				dfs[cell_name+'_area']=total_cell_area[cell_name]
+				dfs['area_ratio']=total_cell_area[cell_name]/total_foreground_area
+				dfs=pd.DataFrame(dfs,index=['value'])
+				df.to_excel(writer,sheet_name=cell_name,float_format='%.6f')
 
 		print('Analysis completed!')
 
