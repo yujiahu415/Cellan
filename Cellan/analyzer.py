@@ -209,7 +209,7 @@ class AnalyzeCells():
 
 		data={}
 		total_foreground_area=0
-		parameters=['center','area','height','width','perimeter','roundness','intensity']
+		parameters=['center','area','height','width','perimeter','roundness','intensity','segmentation']
 
 		for cell_name in self.cell_kinds:
 			data[cell_name]={}
@@ -228,11 +228,14 @@ class AnalyzeCells():
 		if height%self.fov_dim!=0:
 			num_h+=1
 
+		to_annotate=np.uint8(exposure.rescale_intensity(image,out_range=(0,255)))
 		thickness=max(1,round(self.fov_dim/960))
 
 		for h in range(num_h):
 
 			for w in range(num_w):
+
+				offset=np.array([[[int(w*self.fov_dim),int(h*self.fov_dim)]]])
 
 				analysis_fov=image[int(h*self.fov_dim):min(int((h+1)*self.fov_dim),height),int(w*self.fov_dim):min(int((w+1)*self.fov_dim),width)]
 				detect_fov=np.uint8(exposure.rescale_intensity(analysis_fov,out_range=(0,255)))
@@ -260,6 +263,8 @@ class AnalyzeCells():
 				classes=instances.pred_classes.numpy()
 				classes=[self.cell_mapping[str(x)] for x in classes]
 				scores=instances.scores.numpy()
+
+
 
 				if len(masks)>0:
 
