@@ -333,33 +333,27 @@ class AnalyzeCells():
 													data[cell_name]['segmentation'].append(segmentation)
 													cv2.drawContours(to_annotate,[cnt],0,color,thickness)
 													if self.show_ids:
-														cx-=int(w*self.fov_dim)
-														cy-=int(h*self.fov_dim)
 														cv2.putText(to_annotate,str(len(cell_centers[cell_name])),(cx,cy),cv2.FONT_HERSHEY_SIMPLEX,thickness,color,thickness)
 													total_cell_area[cell_name]+=area
-													if self.inners is not None:
-														if self.inners=='white':
-															thred=cv2.threshold(cv2.cvtColor(detect_fov,cv2.COLOR_BGR2GRAY)*mask,0,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)[1]
-														else:
-															thred=cv2.threshold(cv2.cvtColor(detect_fov,cv2.COLOR_BGR2GRAY)*mask,0,255,cv2.THRESH_BINARY_INV+cv2.THRESH_OTSU)[1]
-														cnts,_=cv2.findContours(thred,cv2.RETR_LIST,cv2.CHAIN_APPROX_NONE)
-														if len(cnts)>1:
-															cnt=sorted(cnts,key=cv2.contourArea,reverse=True)[1]
-															cv2.drawContours(to_annotate,[cnt],0,color,thickness)
-															area=np.count_nonzero(thred)
-															(_,_),(wd_in,ht_in),_=cv2.minAreaRect(cnt)
-															if ht_in>0 and wd_in>0:
-																ratio=(ht/ht_in+wd/wd_in)/2
-															else:
-																ratio=np.nan
-														else:
-															area=wd_in=ht_in=ratio=np.nan
-														inners_areas[cell_name].append(area)
-														inners_heights[cell_name].append(ht_in)
-														inners_widths[cell_name].append(wd_in)
-														inners_out_ratio[cell_name].append(ratio)
 
-					cv2.imwrite(os.path.join(self.results_path,os.path.splitext(os.path.basename(self.path_to_file))[0]+'_'+str(w)+str(h)+'_annotated.jpg'),to_annotate)
+		cv2.imwrite(os.path.join(self.results_path,os.path.splitext(os.path.basename(self.path_to_file))[0]+'_annotated.jpg'),to_annotate)
+
+		with pd.ExcelWriter(os.path.join(out_path,'measurements.xlsx'),engine='openpyxl') as writer:
+
+			parameters.remove('segmentation')
+
+			for cell_name in self.cell_kinds:
+
+				rows=[]
+				columns=['filename','ID']+parameters
+
+				if cell_name in data:
+					values=zip(*[data[cell_name][parameter] for parameter in parameters])
+					for idx,value in enumerate(values):
+						rows.append([os.path.splitext(os.path.basename(self.path_to_file))[0],idx+1]+list(value))
+
+				df=pd.DataFrame(rows,columns=columns)
+				df.to_excel(writer,sheet_name=cell_name,float_format='%.2f',index=False)
 
 		for cell_name in self.cell_kinds:
 
