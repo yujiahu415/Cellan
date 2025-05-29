@@ -385,7 +385,7 @@ class AnalyzeCells():
 		for i,seg in enumerate(annotation['segmentations']):
 
 			category_id=self.cell_kinds.index(annotation['class_names'][i])+1
-			polygon=[(seg[0][x],seg[0][x+1]) for x in range(0,len(seg[0])-1,2)]
+			polygon=[(seg[x],seg[x+1]) for x in range(0,len(seg)-1,2)]
 
 			n=len(polygon)
 			area=0
@@ -406,7 +406,7 @@ class AnalyzeCells():
 				'id':annotation_id,
 				'image_id':0,
 				'category_id':category_id,
-				'segmentation':segmentation,
+				'segmentation':[seg],
 				'area':area,
 				'bbox':bbox,
 				'iscrowd':0
