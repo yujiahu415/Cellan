@@ -321,16 +321,16 @@ class AnalyzeCells():
 													if wd<self.filters['width'][0] or wd>self.filters['width'][1]:
 														continue
 												if area>0:
-													cell_numbers[cell_name]+=1
 													cx=int(cv2.moments(cnt)['m10']/cv2.moments(cnt)['m00'])+int(w*self.fov_dim)
 													cy=int(cv2.moments(cnt)['m01']/cv2.moments(cnt)['m00'])+int(h*self.fov_dim)
-													cell_centers[cell_name].append((cx,cy))
-													cell_areas[cell_name].append(area)
-													cell_heights[cell_name].append(ht)
-													cell_widths[cell_name].append(wd)
-													cell_perimeter[cell_name].append(perimeter)
-													cell_roundness[cell_name].append(roundness)
-													cell_intensities[cell_name].append(intensity)
+													data[cell_name]['center'].append((cx,cy))
+													data[cell_name]['area'].append(area)
+													data[cell_name]['height'].append(ht)
+													data[cell_name]['width'].append(wd)
+													data[cell_name]['perimeter'].append(perimeter)
+													data[cell_name]['roundness'].append(roundness)
+													data[cell_name]['intensity'].append(intensity)
+													data[cell_name]['segmentation'].append(segmentation)
 													cv2.drawContours(to_annotate,[cnt],0,color,thickness)
 													if self.show_ids:
 														cx-=int(w*self.fov_dim)
