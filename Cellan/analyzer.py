@@ -1,6 +1,7 @@
 from .detector import Detector
 import os
 import cv2
+import json
 import torch
 import datetime
 import numpy as np
@@ -363,7 +364,7 @@ class AnalyzeCells():
 				dfs[cell_name+'_area']=data[cell_name]['total_cell_area']
 				dfs['area_ratio']=data[cell_name]['total_cell_area']/total_foreground_area
 				dfs=pd.DataFrame(dfs,index=['value'])
-				df.to_excel(writer,sheet_name=cell_name,float_format='%.6f')
+				dfs.to_excel(writer,sheet_name=cell_name,float_format='%.6f')
 
 		coco_format={'categories':[],'images':[],'annotations':[]}
 
