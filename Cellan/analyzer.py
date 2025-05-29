@@ -336,7 +336,7 @@ class AnalyzeCells():
 														cv2.putText(to_annotate,str(len(cell_centers[cell_name])),(cx,cy),cv2.FONT_HERSHEY_SIMPLEX,thickness,color,thickness)
 													total_cell_area[cell_name]+=area
 
-		cv2.imwrite(os.path.join(self.results_path,os.path.splitext(os.path.basename(self.path_to_file))[0]+'_annotated.jpg'),to_annotate)
+		cv2.imwrite(os.path.join(self.results_path,os.path.splitext(os.path.basename(self.path_to_file))[0]+'_annotated'+os.path.basename(self.path_to_file).split('.')[-1]),to_annotate)
 
 		with pd.ExcelWriter(os.path.join(self.results_path,os.path.splitext(os.path.basename(self.path_to_file))[0]+'_summary.xlsx'),engine='openpyxl') as writer:
 
