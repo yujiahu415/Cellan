@@ -339,7 +339,7 @@ class AnalyzeCells():
 														cv2.putText(to_annotate,str(len(data[cell_name]['center'])),(cx,cy),cv2.FONT_HERSHEY_SIMPLEX,thickness,color,thickness)
 													data[cell_name]['total_cell_area']+=area
 
-		cv2.imwrite(os.path.join(self.results_path,os.path.splitext(image_name)[0]+'_annotated'+image_name.split('.')[-1]),to_annotate)
+		cv2.imwrite(os.path.join(self.results_path,os.path.splitext(image_name)[0]+'_annotated.'+image_name.split('.')[-1]),to_annotate)
 
 		with pd.ExcelWriter(os.path.join(self.results_path,os.path.splitext(image_name)[0]+'_summary.xlsx'),engine='openpyxl') as writer:
 
