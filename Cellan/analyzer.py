@@ -264,8 +264,6 @@ class AnalyzeCells():
 				classes=[self.cell_mapping[str(x)] for x in classes]
 				scores=instances.scores.numpy()
 
-
-
 				if len(masks)>0:
 
 					to_annotate=np.uint8(exposure.rescale_intensity(analysis_fov,out_range=(0,255)))
@@ -305,6 +303,8 @@ class AnalyzeCells():
 												roundness=(4*np.pi*area)/(perimeter*perimeter)
 												(_,_),(wd,ht),_=cv2.minAreaRect(cnt)
 												intensity=np.sum(analysis_fov*cv2.cvtColor(mask,cv2.COLOR_GRAY2BGR))/max(area,1)
+												cnt=cnt+offset
+												segmentation=cnt.flatten().tolist()
 												if 'area' in self.filters:
 													if area<self.filters['area'][0] or area>self.filters['area'][1]:
 														continue
