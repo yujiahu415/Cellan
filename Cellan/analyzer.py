@@ -208,39 +208,14 @@ class AnalyzeCells():
 	def analyze_singlechannel(self):
 
 		data={}
+		total_foreground_area=0
 		parameters=['center','area','height','width','perimeter','roundness','intensity']
 
-		cell_numbers={}
-		cell_centers={}
-		cell_areas={}
-		cell_heights={}
-		cell_widths={}
-		cell_perimeter={}
-		cell_roundness={}
-		cell_intensities={}
-		total_cell_area={}
-		total_foreground_area=0
-		if self.inners is not None:
-			inners_areas={}
-			inners_heights={}
-			inners_widths={}
-			inners_out_ratio={}
-
 		for cell_name in self.cell_kinds:
-			cell_numbers[cell_name]=0
-			cell_centers[cell_name]=[]
-			cell_areas[cell_name]=[]
-			cell_heights[cell_name]=[]
-			cell_widths[cell_name]=[]
-			cell_perimeter[cell_name]=[]
-			cell_roundness[cell_name]=[]
-			cell_intensities[cell_name]=[]
-			total_cell_area[cell_name]=0
-			if self.inners is not None:
-				inners_areas[cell_name]=[]
-				inners_heights[cell_name]=[]
-				inners_widths[cell_name]=[]
-				inners_out_ratio[cell_name]=[]
+			data[cell_name]={}
+			data[cell_name][total_cell_area]=0
+			for parameter in parameters:
+				data[cell_name][parameter]=[]
 
 		image=imread(self.path_to_file)
 		image=cv2.cvtColor(image,cv2.COLOR_RGB2BGR)
