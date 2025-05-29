@@ -208,8 +208,9 @@ class AnalyzeCells():
 	def analyze_singlechannel(self):
 
 		data={}
+		annotation={'segmentations':[],'class_names':[]}
 		total_foreground_area=0
-		parameters=['center','area','height','width','perimeter','roundness','intensity','segmentation']
+		parameters=['center','area','height','width','perimeter','roundness','intensity']
 
 		for cell_name in self.cell_kinds:
 			data[cell_name]={}
@@ -331,7 +332,8 @@ class AnalyzeCells():
 													data[cell_name]['perimeter'].append(perimeter)
 													data[cell_name]['roundness'].append(roundness)
 													data[cell_name]['intensity'].append(intensity)
-													data[cell_name]['segmentation'].append(segmentation)
+													annotation['segmentations'].append(segmentation)
+													annotation['class_names'].append(cell_name)
 													cv2.drawContours(to_annotate,[cnt],0,color,thickness)
 													if self.show_ids:
 														cv2.putText(to_annotate,str(len(cell_centers[cell_name])),(cx,cy),cv2.FONT_HERSHEY_SIMPLEX,thickness,color,thickness)
@@ -340,8 +342,6 @@ class AnalyzeCells():
 		cv2.imwrite(os.path.join(self.results_path,os.path.splitext(image_name)[0]+'_annotated'+image_name.split('.')[-1]),to_annotate)
 
 		with pd.ExcelWriter(os.path.join(self.results_path,os.path.splitext(image_name)[0]+'_summary.xlsx'),engine='openpyxl') as writer:
-
-			parameters.remove('segmentation')
 
 			for cell_name in self.cell_kinds:
 
@@ -384,57 +384,29 @@ class AnalyzeCells():
 			'height':image.shape[0],
 			'file_name':image_name})
 
-		for i,seg in enumerate(data):
+		for i,seg in enumerate(annotation['segmentations']):
 
-			category_id=sorted(list(self.color_map.keys())).index(self.information[image_name]['class_names'][j])+1
-			segmentation=[np.array(polygon).flatten().tolist()]
-			area=self.compute_area(polygon)
-			bbox=self.compute_bbox(polygon)
+			category_id=self.cell_kinds.index(annotation['class_names'][i])+1
+			polygon=[(seg[0][x],seg[0][x+1]) for x in range(0,len(seg[0])-1,2)]
 
-			if code is not None or angle is not None:
+			n=len(polygon)
+			area=0
+			for i in range(n):
+				x1,y1=polygon[i]
+				x2,y2=polygon[(i+1)%n]
+				area+=x1*y2-x2*y1
+			area=abs(area)/2
 
-				new_segmentation=[]
-				for seg in segmentation:
-					transformed_seg=[]
-					for i in range(0,len(seg),2):
-						if code==1:
-							x=image_width-seg[i]
-							y=seg[i+1]
-						elif code==0:
-							x=seg[i]
-							y=image_height-seg[i+1]
-						elif code==-1:
-							x=image_width-seg[i]
-							y=image_height-seg[i+1]
-						else:
-							x=seg[i]
-							y=seg[i+1]
-						if angle is not None:
-							x,y=self.rotate_point(x,y,image_width/2,image_height/2,angle,image_width,image_height)
-						transformed_seg.extend([int(x),int(y)])
-					new_segmentation.append(transformed_seg)
-				segmentation=new_segmentation
-
-				[x,y,w,h]=bbox
-				if code==1:
-					x=image_width-(x+w)
-				elif code==0:
-					y=image_height-(y+h)
-				elif code==-1:
-					x=image_width-(x+w)
-					y=image_height-(y+h)
-				if angle is not None:
-					box_points=np.array([[x,y],[x+w,y],[x,y+h],[x+w,y+h]])
-					rotated_box=np.array([self.rotate_point(px,py,image_width/2,image_height/2,angle,image_width,image_height) for px,py in box_points])
-					x,y=rotated_box.min(axis=0)
-					x_max,y_max=rotated_box.max(axis=0)
-					w=x_max-x
-					h=y_max-y
-				bbox=[int(x),int(y),int(w),int(h)]
+			x_coords,y_coords=zip(*polygon)
+			x_min=int(min(x_coords))
+			y_min=int(min(y_coords))
+			x_max=int(max(x_coords))
+			y_max=int(max(y_coords))
+			bbox=[x_min,y_min,x_max-x_min,y_max-y_min]
 
 			coco_format['annotations'].append({
 				'id':annotation_id,
-				'image_id':image_id,
+				'image_id':0,
 				'category_id':category_id,
 				'segmentation':segmentation,
 				'area':area,
@@ -444,11 +416,8 @@ class AnalyzeCells():
 
 			annotation_id+=1
 
-	image_id+=1
-
-		with open(os.path.join(self.result_path,'annotations.json'),'w') as json_file:
+		with open(os.path.join(self.results_path,'annotations.json'),'w') as json_file:
 			json.dump(coco_format,json_file)
-		wx.MessageBox('Annotations exported successfully.','Success',wx.ICON_INFORMATION)
 
 		print('Analysis completed!')
 
