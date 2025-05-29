@@ -268,8 +268,6 @@ class AnalyzeCells():
 
 				if len(masks)>0:
 
-					to_annotate=np.uint8(exposure.rescale_intensity(analysis_fov,out_range=(0,255)))
-
 					for cell_name in self.cell_kinds:
 
 						hex_color=self.names_colors[cell_name].lstrip('#')
@@ -362,8 +360,8 @@ class AnalyzeCells():
 
 				dfs={}
 				dfs['total_area']=total_foreground_area
-				dfs[cell_name+'_area']=total_cell_area[cell_name]
-				dfs['area_ratio']=total_cell_area[cell_name]/total_foreground_area
+				dfs[cell_name+'_area']=data[cell_name]['total_cell_area']
+				dfs['area_ratio']=data[cell_name]['total_cell_area']/total_foreground_area
 				dfs=pd.DataFrame(dfs,index=['value'])
 				df.to_excel(writer,sheet_name=cell_name,float_format='%.6f')
 
