@@ -219,8 +219,12 @@ class AnalyzeCells():
 			for parameter in parameters:
 				data[cell_name][parameter]=[]
 
-		image=imread(self.path_to_file)
-		image=cv2.cvtColor(image,cv2.COLOR_RGB2BGR)
+		image_name=os.path.basename(self.path_to_file)
+		if os.path.splitext(image_name)[1] in ['.jpg','.JPG','.png','.PNG']:
+			image=cv2.imread(self.path_to_file)
+		else:
+			image=imread(self.path_to_file)
+			image=cv2.cvtColor(image,cv2.COLOR_RGB2BGR)
 		image_name=os.path.basename(self.path_to_file)
 		width=image.shape[1]
 		height=image.shape[0]
