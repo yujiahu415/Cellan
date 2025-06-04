@@ -1829,7 +1829,7 @@ class WindowLv2_AnalyzeSingleChannel(wx.Frame):
 	def select_files(self,event):
 
 		wildcard='TIF/SVS/JPG/PNG files (*.tif/*.svs/*.jpg/*.png)|*.tif;*.TIF;*.tiff;*.TIFF;*.svs;*.SVS;*.jpg;*.JPG;*.png;*.PNG'
-		dialog=wx.FileDialog(self,'Select TIF/SVS file(s)','','',wildcard,style=wx.FD_MULTIPLE)
+		dialog=wx.FileDialog(self,'Select TIF/SVS/JPG/PNG file(s)','','',wildcard,style=wx.FD_MULTIPLE)
 		if dialog.ShowModal()==wx.ID_OK:
 			self.path_to_files=dialog.GetPaths()
 			path=os.path.dirname(self.path_to_files[0])
