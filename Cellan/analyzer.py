@@ -379,7 +379,7 @@ class AnalyzeCells():
 				'supercategory':'none'})
 
 		annotation_id=0
-		imwrite(os.path.join(self.results_path,image_name),image)
+		imwrite(os.path.join(self.results_path,image_name),cv2.cvtColor(image,cv2.COLOR_BGR2RGB))
 
 		coco_format['images'].append({
 			'id':0,
