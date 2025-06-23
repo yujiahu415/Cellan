@@ -2,15 +2,15 @@ import os
 import cv2
 import json
 import torch
-from detectron2 import model_zoo
-from detectron2.checkpoint import DetectionCheckpointer
-from detectron2.config import get_cfg
-from detectron2.data import MetadataCatalog,DatasetCatalog,build_detection_test_loader
-from detectron2.data.datasets import register_coco_instances
-from detectron2.engine import DefaultTrainer,DefaultPredictor
-from detectron2.utils.visualizer import Visualizer
-from detectron2.evaluation import COCOEvaluator,inference_on_dataset
-from detectron2.modeling import build_model
+from Cellan.detectron2 import model_zoo
+from Cellan.detectron2.checkpoint import DetectionCheckpointer
+from Cellan.detectron2.config import get_cfg
+from Cellan.detectron2.data import MetadataCatalog,DatasetCatalog,build_detection_test_loader
+from Cellan.detectron2.data.datasets import register_coco_instances
+from Cellan.detectron2.engine import DefaultTrainer,DefaultPredictor
+from Cellan.detectron2.utils.visualizer import Visualizer
+from Cellan.detectron2.evaluation import COCOEvaluator,inference_on_dataset
+from Cellan.detectron2.modeling import build_model
 
 
 
