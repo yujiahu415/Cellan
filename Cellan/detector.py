@@ -142,6 +142,7 @@ class Detector():
 			print('The images that can be analyzed by this Detector have white/lighter background')
 
 		cfg=get_cfg()
+		cfg.set_new_allowed(True)
 		cfg.merge_from_file(os.path.join(path_to_detector,'config.yaml'))
 		cfg.MODEL.WEIGHTS=os.path.join(path_to_detector,'model_final.pth')
 		cfg.MODEL.DEVICE=self.device
@@ -191,6 +192,7 @@ class Detector():
 			print('The images that can be analyzed by this Detector have white/lighter background')
 
 		cfg=get_cfg()
+		cfg.set_new_allowed(True)
 		cfg.merge_from_file(config)
 		cfg.MODEL.DEVICE=self.device
 		self.current_detector=build_model(cfg)
