@@ -1973,7 +1973,7 @@ class WindowLv2_AnalyzeSingleChannel(wx.Frame):
 
 			for i in self.path_to_files:
 				AC=AnalyzeCells(i,self.result_path,self.path_to_detector,self.cell_kinds,self.names_colors,detection_threshold=self.detection_threshold,expansion=self.expansion,show_ids=self.show_ids,
-					filters=self.filters,inners=self.inners)
+					filters=self.filters)
 				AC.analyze_singlechannel()
 
 				basename=os.path.splitext(os.path.basename(i))[0]
