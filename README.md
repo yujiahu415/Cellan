@@ -11,14 +11,14 @@
 <p>&nbsp;</p>
 
 Cellan works for Windows, Mac and Linux systems. Installation steps can vary for different systems. But in general, you need to:
-1) Install Python3 (3.9 or 3.10)
+1) Install Python3 (>=3.9)
 2) Set up CUDA (v11.8) if using a GPU
 3) Install Cellan with pip
-4) If using a GPU, install PyTorch==2.0.1 with cu118
+4) If using a GPU, install PyTorch with cu118 support
 
 Below is the guide for Windows.
 
-1. Install [Python 3.10](https://www.python.org/downloads/release/python-31011/).
+1. Install Python3, for example, [Python 3.12](https://www.python.org/downloads/release/python-31210/).
 
    Scroll down to the bottom and click the `Windows installer (64-bit)` option. Run the installer and select 'Add python to path' and 'Disable long path limit'.
 
@@ -40,19 +40,19 @@ Below is the guide for Windows.
 3. Upgrade `pip`, `wheel`, `setuptools`.
    
    ```pwsh-session
-   py -3.10 -m pip install --upgrade pip wheel setuptools
+   py -3.12 -m pip install --upgrade pip wheel setuptools
    ```
 
 4. Install Cellan via `pip`.
    
    ```pwsh-session
-   py -3.10 -m pip install Cellan
+   py -3.12 -m pip install Cellan
    ```
 
 5. If you're using an NVIDIA GPU, install PyTorch with cu118:
    
    ```pwsh-session
-   py -3.10 -m pip install torch==2.0.1 torchvision==0.15.2 torchaudio==2.0.2 --index-url https://download.pytorch.org/whl/cu118
+   py -3.12 -m pip install torch==2.5.1 torchvision==0.20.1 torchaudio==2.5.1 --index-url https://download.pytorch.org/whl/cu118
    ```
 
 Launch Cellan:
@@ -64,7 +64,7 @@ Launch Cellan:
    If this doesn't work, which typically is because the python3/script is not in your environment path. You can google 'add python3 script to path in environmental variable in windows' to add it to path, or simply use the following commands to initiate Cellan:
 
    ```pwsh-session
-   py -3.10
+   py -3.12
    ```
    ```pwsh-session
    from Cellan import __main__
