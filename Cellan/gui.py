@@ -956,64 +956,6 @@ class WindowLv1_TrainingModule(wx.Frame):
 
 
 
-class WindowLv1_AnalysisModule(wx.Frame):
-
-	def __init__(self,title):
-
-		super(WindowLv1_AnalysisModule,self).__init__(parent=None,title=title,size=(500,295))
-		self.dispaly_window()
-
-
-	def dispaly_window(self):
-
-		panel=wx.Panel(self)
-		boxsizer=wx.BoxSizer(wx.VERTICAL)
-		boxsizer.Add(0,60,0)
-
-		button_analyzemultichannels=wx.Button(panel,label='Analyze Multichannel Images',size=(300,40))
-		button_analyzemultichannels.Bind(wx.EVT_BUTTON,self.analyze_multichannels)
-		wx.Button.SetToolTip(button_analyzemultichannels,
-			'Automatically detect cells of your interest and analyze their numbers, areas, and pixel intensities in multi-channel images.')
-		boxsizer.Add(button_analyzemultichannels,0,wx.ALIGN_CENTER,10)
-		boxsizer.Add(0,5,0)
-
-		button_analyzesinglechannel=wx.Button(panel,label='Analyze Singlechannel Images',size=(300,40))
-		button_analyzesinglechannel.Bind(wx.EVT_BUTTON,self.analyze_singlechannels)
-		wx.Button.SetToolTip(button_analyzesinglechannel,
-			'Automatically detect cells of your interest and analyze their numbers, areas, and pixel intensities in single-channel images.')
-		boxsizer.Add(button_analyzesinglechannel,0,wx.ALIGN_CENTER,10)
-		boxsizer.Add(0,5,0)
-
-		button_calculateintensities=wx.Button(panel,label='Calculate Channel Intensities',size=(300,40))
-		button_calculateintensities.Bind(wx.EVT_BUTTON,self.calculate_intensities)
-		wx.Button.SetToolTip(button_calculateintensities,
-			'Calculate total intensity of each channel in images.')
-		boxsizer.Add(button_calculateintensities,0,wx.ALIGN_CENTER,10)
-		boxsizer.Add(0,50,0)
-
-		panel.SetSizer(boxsizer)
-
-		self.Centre()
-		self.Show(True)
-
-
-	def analyze_multichannels(self,event):
-
-		WindowLv2_AnalyzeMultiChannels('Analyze Multichannel Images')
-
-
-	def analyze_singlechannels(self,event):
-
-		WindowLv2_AnalyzeSingleChannel('Analyze Singlechannel Images')
-
-
-	def calculate_intensities(self,event):
-
-		WindowLv2_CalculateTotalIntensity('Calculate Channel Intensities')
-
-
-
-
 
 
 
@@ -1470,6 +1412,63 @@ class WindowLv2_TestDetectors(wx.Frame):
 				shutil.rmtree(os.path.join(self.detector_path,detector))
 			dialog1.Destroy()
 		dialog.Destroy()
+
+
+
+class WindowLv1_AnalysisModule(wx.Frame):
+
+	def __init__(self,title):
+
+		super(WindowLv1_AnalysisModule,self).__init__(parent=None,title=title,size=(500,295))
+		self.dispaly_window()
+
+
+	def dispaly_window(self):
+
+		panel=wx.Panel(self)
+		boxsizer=wx.BoxSizer(wx.VERTICAL)
+		boxsizer.Add(0,60,0)
+
+		button_analyzemultichannels=wx.Button(panel,label='Analyze Multichannel Images',size=(300,40))
+		button_analyzemultichannels.Bind(wx.EVT_BUTTON,self.analyze_multichannels)
+		wx.Button.SetToolTip(button_analyzemultichannels,
+			'Automatically detect cells of your interest and analyze their numbers, areas, and pixel intensities in multi-channel images.')
+		boxsizer.Add(button_analyzemultichannels,0,wx.ALIGN_CENTER,10)
+		boxsizer.Add(0,5,0)
+
+		button_analyzesinglechannel=wx.Button(panel,label='Analyze Singlechannel Images',size=(300,40))
+		button_analyzesinglechannel.Bind(wx.EVT_BUTTON,self.analyze_singlechannels)
+		wx.Button.SetToolTip(button_analyzesinglechannel,
+			'Automatically detect cells of your interest and analyze their numbers, areas, and pixel intensities in single-channel images.')
+		boxsizer.Add(button_analyzesinglechannel,0,wx.ALIGN_CENTER,10)
+		boxsizer.Add(0,5,0)
+
+		button_calculateintensities=wx.Button(panel,label='Calculate Channel Intensities',size=(300,40))
+		button_calculateintensities.Bind(wx.EVT_BUTTON,self.calculate_intensities)
+		wx.Button.SetToolTip(button_calculateintensities,
+			'Calculate total intensity of each channel in images.')
+		boxsizer.Add(button_calculateintensities,0,wx.ALIGN_CENTER,10)
+		boxsizer.Add(0,50,0)
+
+		panel.SetSizer(boxsizer)
+
+		self.Centre()
+		self.Show(True)
+
+
+	def analyze_multichannels(self,event):
+
+		WindowLv2_AnalyzeMultiChannels('Analyze Multichannel Images')
+
+
+	def analyze_singlechannels(self,event):
+
+		WindowLv2_AnalyzeSingleChannel('Analyze Singlechannel Images')
+
+
+	def calculate_intensities(self,event):
+
+		WindowLv2_CalculateTotalIntensity('Calculate Channel Intensities')
 
 
 
