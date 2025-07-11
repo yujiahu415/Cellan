@@ -370,7 +370,7 @@ class AnalyzeCells():
 				dfs=pd.DataFrame(dfs,index=['value'])
 				dfs.to_excel(writer,sheet_name=cell_name,float_format='%.6f')
 
-		coco_format={'categories':[],'images':[],'annotations':[]}
+		coco_format={'info':{'year':'','version':'1','description':'Cellan annotations','contributor':'','url':'https://github.com/yujiahu415/Cellan','date_created':''},'licenses':[],'categories':[],'images':[],'annotations':[]}
 
 		for i,cell_name in enumerate(self.cell_kinds):
 			coco_format['categories'].append({
