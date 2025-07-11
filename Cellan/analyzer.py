@@ -14,7 +14,7 @@ from skimage import exposure
 
 class AnalyzeCells():
 
-	def __init__(self,path_to_file,results_path,path_to_detector,cell_kinds,names_colors,detection_threshold=None,expansion=None,show_ids=False,filters={},inners=None):
+	def __init__(self,path_to_file,results_path,path_to_detector,cell_kinds,names_colors,detection_threshold=None,expansion=None,show_ids=False,filters={}):
 
 		self.path_to_file=path_to_file
 		self.results_path=os.path.join(results_path,os.path.splitext(os.path.basename(self.path_to_file))[0])
@@ -38,7 +38,6 @@ class AnalyzeCells():
 		self.black_background=self.detector.black_background
 		self.show_ids=show_ids
 		self.filters=filters
-		self.inners=inners
 
 
 	def analyze_multichannels(self,detection_channel=0,analysis_channels=[]):
