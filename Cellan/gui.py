@@ -1630,7 +1630,7 @@ class WindowLv2_AnalyzeMultiChannels(wx.Frame):
 			for color,cell_name in zip(colors,self.cell_kinds):
 				self.names_colors[cell_name]=color
 			for cell_name in self.cell_kinds:
-				dialog1=ColorPicker(self,f'Color for annotating {cell_name}',[cell_name,self.names_colors[cell_name]])
+				dialog1=ColorPicker(self,f'{cell_name}',[cell_name,self.names_colors[cell_name]])
 				if dialog1.ShowModal()==wx.ID_OK:
 					(r,b,g,_)=dialog1.color_picker.GetColour()
 					new_color='#%02x%02x%02x'%(r,b,g)
@@ -1876,7 +1876,7 @@ class WindowLv2_AnalyzeSingleChannel(wx.Frame):
 			for color,cell_name in zip(colors,self.cell_kinds):
 				self.names_colors[cell_name]=color
 			for cell_name in self.cell_kinds:
-				dialog1=ColorPicker(self,f'Color for annotating {cell_name}',[cell_name,self.names_colors[cell_name]])
+				dialog1=ColorPicker(self,f'{cell_name}',[cell_name,self.names_colors[cell_name]])
 				if dialog1.ShowModal()==wx.ID_OK:
 					(r,b,g,_)=dialog1.color_picker.GetColour()
 					new_color='#%02x%02x%02x'%(r,b,g)
