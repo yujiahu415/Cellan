@@ -11,7 +11,7 @@ import shutil
 import tifffile
 import pandas as pd
 from skimage.transform import resize
-from .analyzer import AnalyzeCells
+from .analyzer import AnalyzeCells,AnalyzeCalciumSignal
 from .detector import Detector
 from .tools import extract_images,preprocess_image,calculate_totalintensity
 from Cellan import __version__
