@@ -899,7 +899,7 @@ class WindowLv1_TrainingModule(wx.Frame):
 
 	def __init__(self,title):
 
-		super(WindowLv1_TrainingModule,self).__init__(parent=None,title=title,size=(500,350))
+		super(WindowLv1_TrainingModule,self).__init__(parent=None,title=title,size=(500,400))
 		self.dispaly_window()
 
 
@@ -909,11 +909,18 @@ class WindowLv1_TrainingModule(wx.Frame):
 		boxsizer=wx.BoxSizer(wx.VERTICAL)
 		boxsizer.Add(0,60,0)
 
-		button_generateimages=wx.Button(panel,label='Generate Image Examples',size=(300,40))
-		button_generateimages.Bind(wx.EVT_BUTTON,self.generate_images)
-		wx.Button.SetToolTip(button_generateimages,
+		button_generateimagesstatic=wx.Button(panel,label='Generate Image Examples (Static)',size=(300,40))
+		button_generateimagesstatic.Bind(wx.EVT_BUTTON,self.generate_images_static)
+		wx.Button.SetToolTip(button_generateimagesstatic,
 			'Extract images from LIF/TIF/SVS/QPTIFF files for annotation of the cells of your interest. See Extended Guide for how to select images to annotate.')
-		boxsizer.Add(button_generateimages,0,wx.ALIGN_CENTER,10)
+		boxsizer.Add(button_generateimagesstatic,0,wx.ALIGN_CENTER,10)
+		boxsizer.Add(0,5,0)
+
+		button_generateimagestime=wx.Button(panel,label='Generate Image Examples (Time-series)',size=(300,40))
+		button_generateimagestime.Bind(wx.EVT_BUTTON,self.generate_images_time)
+		wx.Button.SetToolTip(button_generateimagestime,
+			'Extract frames from LIF/TIF files to annotate the neural structures of your interest. See Extended Guide for how to select images to annotate.')
+		boxsizer.Add(button_generateimagestime,0,wx.ALIGN_CENTER,10)
 		boxsizer.Add(0,5,0)
 
 		link_annotate=wx.lib.agw.hyperlink.HyperLinkCtrl(panel,0,'\nAnnotate images with EZannot\n',URL='https://github.com/yujiahu415/EZannot')
@@ -940,9 +947,9 @@ class WindowLv1_TrainingModule(wx.Frame):
 		self.Show(True)
 
 
-	def generate_images(self,event):
+	def generate_images_static(self,event):
 
-		WindowLv2_GenerateImages('Generate Image Examples')
+		WindowLv2_GenerateImagesStatic('Generate Image Examples (Static)')
 
 
 	def train_detectors(self,event):
@@ -956,11 +963,11 @@ class WindowLv1_TrainingModule(wx.Frame):
 
 
 
-class WindowLv2_GenerateImages(wx.Frame):
+class WindowLv2_GenerateImagesStatic(wx.Frame):
 
 	def __init__(self,title):
 
-		super(WindowLv2_GenerateImages,self).__init__(parent=None,title=title,size=(1000,240))
+		super(WindowLv2_GenerateImagesStatic,self).__init__(parent=None,title=title,size=(1000,240))
 		self.path_to_files=None
 		self.result_path=None
 		self.fov_dim=1280
