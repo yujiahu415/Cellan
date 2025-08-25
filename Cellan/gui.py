@@ -909,17 +909,17 @@ class WindowLv1_TrainingModule(wx.Frame):
 		boxsizer=wx.BoxSizer(wx.VERTICAL)
 		boxsizer.Add(0,60,0)
 
-		button_generateimagesstatic=wx.Button(panel,label='Generate Image Examples (Static)',size=(300,40))
+		button_generateimagesstatic=wx.Button(panel,label='Generate Image Examples (Static images)',size=(300,40))
 		button_generateimagesstatic.Bind(wx.EVT_BUTTON,self.generate_images_static)
 		wx.Button.SetToolTip(button_generateimagesstatic,
-			'Extract images from LIF/TIF/SVS/QPTIFF files for annotation of the cells of your interest. See Extended Guide for how to select images to annotate.')
+			'Extract images from LIF/TIF/SVS/QPTIFF static image files for annotation of the cells of your interest. See Extended Guide for how to select images to annotate.')
 		boxsizer.Add(button_generateimagesstatic,0,wx.ALIGN_CENTER,10)
 		boxsizer.Add(0,5,0)
 
 		button_generateimagestime=wx.Button(panel,label='Generate Image Examples (Time-series)',size=(300,40))
 		button_generateimagestime.Bind(wx.EVT_BUTTON,self.generate_images_time)
 		wx.Button.SetToolTip(button_generateimagestime,
-			'Extract frames from LIF/TIF files to annotate the neural structures of your interest. See Extended Guide for how to select images to annotate.')
+			'Extract frames from time-series LIF/TIF files for annotation of the cells of your interest See Extended Guide for how to select images to annotate.')
 		boxsizer.Add(button_generateimagestime,0,wx.ALIGN_CENTER,10)
 		boxsizer.Add(0,5,0)
 
@@ -949,7 +949,12 @@ class WindowLv1_TrainingModule(wx.Frame):
 
 	def generate_images_static(self,event):
 
-		WindowLv2_GenerateImagesStatic('Generate Image Examples (Static)')
+		WindowLv2_GenerateImagesStatic('Generate Image Examples (Static images)')
+
+
+	def generate_images_time(self,event):
+
+		WindowLv2_GenerateImagesTime('Generate Image Examples (Time-series)')
 
 
 	def train_detectors(self,event):
@@ -1080,6 +1085,163 @@ class WindowLv2_GenerateImagesStatic(wx.Frame):
 			for i in self.path_to_files:
 				extract_images(i,self.result_path,self.fov_dim,black_background=self.black_background)
 			print('Image example generation completed!')
+
+
+
+class WindowLv2_GenerateImagesTime(wx.Frame):
+
+	def __init__(self,title):
+
+		super(WindowLv2_GenerateImagesTime,self).__init__(parent=None,title=title,size=(1000,330))
+		self.path_to_lifs=None
+		self.result_path=None
+		self.t=0
+		self.duration=10
+		self.skip_redundant=10
+
+		self.dispaly_window()
+
+	def dispaly_window(self):
+
+		panel=wx.Panel(self)
+		boxsizer=wx.BoxSizer(wx.VERTICAL)
+
+		module_inputvideos=wx.BoxSizer(wx.HORIZONTAL)
+		button_inputvideos=wx.Button(panel,label='Select the *.LIF/*.TIF file(s) to generate\nimage examples',size=(300,40))
+		button_inputvideos.Bind(wx.EVT_BUTTON,self.select_videos)
+		wx.Button.SetToolTip(button_inputvideos,'Select one or more *.LIF/*.TIF files.')
+		self.text_inputvideos=wx.StaticText(panel,label='None.',style=wx.ALIGN_LEFT|wx.ST_ELLIPSIZE_END)
+		module_inputvideos.Add(button_inputvideos,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
+		module_inputvideos.Add(self.text_inputvideos,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
+		boxsizer.Add(0,10,0)
+		boxsizer.Add(module_inputvideos,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
+		boxsizer.Add(0,5,0)
+
+		module_outputfolder=wx.BoxSizer(wx.HORIZONTAL)
+		button_outputfolder=wx.Button(panel,label='Select a folder to store the\ngenerated image examples',size=(300,40))
+		button_outputfolder.Bind(wx.EVT_BUTTON,self.select_outpath)
+		wx.Button.SetToolTip(button_outputfolder,'The generated image examples (extracted frames) will be stored in this folder.')
+		self.text_outputfolder=wx.StaticText(panel,label='None.',style=wx.ALIGN_LEFT|wx.ST_ELLIPSIZE_END)
+		module_outputfolder.Add(button_outputfolder,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
+		module_outputfolder.Add(self.text_outputfolder,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
+		boxsizer.Add(module_outputfolder,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
+		boxsizer.Add(0,5,0)
+
+		module_startgenerate=wx.BoxSizer(wx.HORIZONTAL)
+		button_startgenerate=wx.Button(panel,label='Specify when generating image examples\nshould begin (unit: frame)',size=(300,40))
+		button_startgenerate.Bind(wx.EVT_BUTTON,self.specify_timing)
+		wx.Button.SetToolTip(button_startgenerate,'Enter a beginning time point for all files')
+		self.text_startgenerate=wx.StaticText(panel,label='Default: at the beginning of the file(s).',style=wx.ALIGN_LEFT|wx.ST_ELLIPSIZE_END)
+		module_startgenerate.Add(button_startgenerate,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
+		module_startgenerate.Add(self.text_startgenerate,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
+		boxsizer.Add(module_startgenerate,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
+		boxsizer.Add(0,5,0)
+
+		module_duration=wx.BoxSizer(wx.HORIZONTAL)
+		button_duration=wx.Button(panel,label='Specify how long generating examples\nshould last (unit: frame)',size=(300,40))
+		button_duration.Bind(wx.EVT_BUTTON,self.input_duration)
+		wx.Button.SetToolTip(button_duration,'This duration will be used for all the files.')
+		self.text_duration=wx.StaticText(panel,label='Default: 10 frames.',style=wx.ALIGN_LEFT|wx.ST_ELLIPSIZE_END)
+		module_duration.Add(button_duration,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
+		module_duration.Add(self.text_duration,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
+		boxsizer.Add(module_duration,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
+		boxsizer.Add(0,5,0)
+
+		module_skipredundant=wx.BoxSizer(wx.HORIZONTAL)
+		button_skipredundant=wx.Button(panel,label='Specify how many frames to skip when\ngenerating two consecutive images',size=(300,40))
+		button_skipredundant.Bind(wx.EVT_BUTTON,self.specify_redundant)
+		wx.Button.SetToolTip(button_skipredundant,'Set an interval between the two consecutively extracted images.')
+		self.text_skipredundant=wx.StaticText(panel,label='Default: generate an image example every 10 frames.',style=wx.ALIGN_LEFT|wx.ST_ELLIPSIZE_END)
+		module_skipredundant.Add(button_skipredundant,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
+		module_skipredundant.Add(self.text_skipredundant,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
+		boxsizer.Add(module_skipredundant,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
+		boxsizer.Add(0,5,0)
+
+		generate=wx.BoxSizer(wx.HORIZONTAL)
+		button_generate=wx.Button(panel,label='Start to generate image examples',size=(300,40))
+		button_generate.Bind(wx.EVT_BUTTON,self.generate_images)
+		wx.Button.SetToolTip(button_generate,'Press the button to start generating image examples.')
+		generate.Add(button_generate,0,wx.LEFT,50)
+		boxsizer.Add(0,5,0)
+		boxsizer.Add(generate,0,wx.RIGHT|wx.ALIGN_RIGHT,90)
+		boxsizer.Add(0,10,0)
+
+		panel.SetSizer(boxsizer)
+
+		self.Centre()
+		self.Show(True)
+
+
+	def select_videos(self,event):
+
+		wildcard='LIF/TIF files (*.lif/*.tif)|*.lif;*.LIF;*.tif;*.TIF;*.tiff;*.TIFF'
+		dialog=wx.FileDialog(self,'Select LIF/TIF file(s)','','',wildcard,style=wx.FD_MULTIPLE)
+		if dialog.ShowModal()==wx.ID_OK:
+			self.path_to_lifs=dialog.GetPaths()
+			path=os.path.dirname(self.path_to_lifs[0])
+			self.text_inputvideos.SetLabel('Selected '+str(len(self.path_to_lifs))+' file(s) in: '+path+'.')
+		dialog.Destroy()
+
+
+	def select_outpath(self,event):
+
+		dialog=wx.DirDialog(self,'Select a directory','',style=wx.DD_DEFAULT_STYLE)
+		if dialog.ShowModal()==wx.ID_OK:
+			self.result_path=dialog.GetPath()
+			self.text_outputfolder.SetLabel('Generate image examples in: '+self.result_path+'.')
+		dialog.Destroy()
+
+
+	def specify_timing(self,event):
+
+		dialog=wx.NumberEntryDialog(self,'Enter beginning time to generate examples','The unit is frame:','Beginning time to generate examples',0,0,100000000000000)
+		if dialog.ShowModal()==wx.ID_OK:
+			self.t=float(dialog.GetValue())
+		self.text_startgenerate.SetLabel('Start to generate image examples at the: '+str(self.t)+' frame.')
+		dialog.Destroy()
+
+
+	def input_duration(self,event):
+
+		dialog=wx.NumberEntryDialog(self,'Enter the duration for generating examples','The unit is frame:','Duration for generating examples',10,1,100000000000000)
+		if dialog.ShowModal()==wx.ID_OK:
+			self.duration=int(dialog.GetValue())
+		self.text_duration.SetLabel('The generation of image examples lasts for '+str(self.duration)+' frames.')
+		dialog.Destroy()
+
+
+	def specify_redundant(self,event):
+
+		dialog=wx.NumberEntryDialog(self,'How many frames to skip?','Enter a number:','Interval for generating examples',10,1,100000000000000)
+		if dialog.ShowModal()==wx.ID_OK:
+			self.skip_redundant=int(dialog.GetValue())
+		self.text_skipredundant.SetLabel('Generate an image example every '+str(self.skip_redundant)+' frames.')
+		dialog.Destroy()
+
+
+	def generate_images(self,event):
+
+		if self.path_to_lifs is None or self.result_path is None:
+
+			wx.MessageBox('No input file(s) / output folder selected.','Error',wx.OK|wx.ICON_ERROR)
+
+		else:
+
+			do_nothing=True
+
+			dialog=wx.MessageDialog(self,'Start to generate image examples?','Start to generate examples?',wx.YES_NO|wx.ICON_QUESTION)
+			if dialog.ShowModal()==wx.ID_YES:
+				do_nothing=False
+			else:
+				do_nothing=True
+			dialog.Destroy()
+
+			if do_nothing is False:
+				print('Generating image examples...')
+				for i in self.path_to_lifs:
+					ACS=AnalyzeCalciumSignal(i,self.result_path,self.t,self.duration)
+					ACS.extract_frames(skip_redundant=self.skip_redundant)
+				print('Image example generation completed!')
 
 
 
