@@ -2513,7 +2513,7 @@ class WindowLv2_AnalyzeCalcium(wx.Frame):
 				self.decode_cellnumber=False
 				self.cell_number={}
 				for cell_name in self.cell_kinds:
-					dialog1=wx.NumberEntryDialog(self,'','The number of '+str(cell_name)+': ',str(cell_name)+' number',1,1,100)
+					dialog1=wx.NumberEntryDialog(self,'','The number of '+str(cell_name)+': ',str(cell_name)+' number',1,1,100000000000000)
 					if dialog1.ShowModal()==wx.ID_OK:
 						self.cell_number[cell_name]=int(dialog1.GetValue())
 					else:
