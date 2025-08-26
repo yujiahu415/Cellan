@@ -1585,7 +1585,7 @@ class WindowLv1_AnalysisModule(wx.Frame):
 
 	def __init__(self,title):
 
-		super(WindowLv1_AnalysisModule,self).__init__(parent=None,title=title,size=(500,295))
+		super(WindowLv1_AnalysisModule,self).__init__(parent=None,title=title,size=(500,340))
 		self.dispaly_window()
 
 
@@ -1614,6 +1614,13 @@ class WindowLv1_AnalysisModule(wx.Frame):
 		wx.Button.SetToolTip(button_calculateintensities,
 			'Calculate total intensity of each channel in images.')
 		boxsizer.Add(button_calculateintensities,0,wx.ALIGN_CENTER,10)
+		boxsizer.Add(0,5,0)
+
+		button_analyzecalcium=wx.Button(panel,label='Analyze Calcium Imaging',size=(300,40))
+		button_analyzecalcium.Bind(wx.EVT_BUTTON,self.analyze_calcium)
+		wx.Button.SetToolTip(button_analyzecalcium,
+			'Automatically detect cell structures of your interest and analyze their fluorescent signal changes.')
+		boxsizer.Add(button_analyzecalcium,0,wx.ALIGN_CENTER,10)
 		boxsizer.Add(0,50,0)
 
 		panel.SetSizer(boxsizer)
