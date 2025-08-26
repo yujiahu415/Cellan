@@ -4,6 +4,7 @@ import numpy as np
 import wx
 import wx.lib.agw.hyperlink as hl
 from pathlib import Path
+import torch
 import matplotlib as mpl
 import matplotlib.cm as cm
 import json
@@ -1644,6 +1645,11 @@ class WindowLv1_AnalysisModule(wx.Frame):
 		WindowLv2_CalculateTotalIntensity('Calculate Channel Intensities')
 
 
+	def analyze_calcium(self,event):
+
+		WindowLv2_AnalyzeCalcium('Analyze Calcium Signal')
+
+
 
 class WindowLv2_AnalyzeMultiChannels(wx.Frame):
 
@@ -2255,6 +2261,333 @@ class WindowLv2_CalculateTotalIntensity(wx.Frame):
 				all_intensities=pd.concat(all_intensities,keys=names,names=['File name','seq']).reset_index(level='seq',drop=True)
 				all_intensities.drop(all_intensities.columns[0],axis=1,inplace=True)
 				all_intensities.to_excel(os.path.join(self.result_path,'all_intensities.xlsx'),float_format='%.2f')
+
+
+
+class WindowLv2_AnalyzeCalcium(wx.Frame):
+
+	def __init__(self,title):
+
+		super(WindowLv2_AnalyzeCalcium,self).__init__(parent=None,title=title,size=(1000,400))
+		self.detector_path=None
+		self.path_to_detector=None
+		self.detector_batch=1
+		self.cell_kinds=[]
+		self.path_to_lifs=None
+		self.result_path=None
+		self.decode_cellnumber=False
+		self.cell_number=None
+		self.autofind_t=False
+		self.decode_t=False
+		self.t=5
+		self.stimulation_channel=0
+		self.main_channel=1
+		self.duration=0
+		self.F0_period=10
+		self.F_period=30
+		self.dispaly_window()
+
+
+	def dispaly_window(self):
+
+		panel=wx.Panel(self)
+		boxsizer=wx.BoxSizer(wx.VERTICAL)
+
+		module_inputvideos=wx.BoxSizer(wx.HORIZONTAL)
+		button_inputvideos=wx.Button(panel,label='Select the *.LIF/*.TIF file(s)\nfor analyzing calcium signals',size=(300,40))
+		button_inputvideos.Bind(wx.EVT_BUTTON,self.select_videos)
+		wx.Button.SetToolTip(button_inputvideos,'Select one or more *.LIF/*.TIF file(s).')
+		self.text_inputvideos=wx.StaticText(panel,label='None.',style=wx.ALIGN_LEFT|wx.ST_ELLIPSIZE_END)
+		module_inputvideos.Add(button_inputvideos,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
+		module_inputvideos.Add(self.text_inputvideos,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
+		boxsizer.Add(0,10,0)
+		boxsizer.Add(module_inputvideos,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
+		boxsizer.Add(0,5,0)
+
+		module_outputfolder=wx.BoxSizer(wx.HORIZONTAL)
+		button_outputfolder=wx.Button(panel,label='Select a folder to store\nthe analysis results',size=(300,40))
+		button_outputfolder.Bind(wx.EVT_BUTTON,self.select_outpath)
+		wx.Button.SetToolTip(button_outputfolder,'Will create a subfolder for each LIF/TIF file in the selected folder.')
+		self.text_outputfolder=wx.StaticText(panel,label='None.',style=wx.ALIGN_LEFT|wx.ST_ELLIPSIZE_END)
+		module_outputfolder.Add(button_outputfolder,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
+		module_outputfolder.Add(self.text_outputfolder,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
+		boxsizer.Add(module_outputfolder,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
+		boxsizer.Add(0,5,0)
+
+		module_detection=wx.BoxSizer(wx.HORIZONTAL)
+		button_detection=wx.Button(panel,label='Select the Detector to\ndetect cell structures',size=(300,40))
+		button_detection.Bind(wx.EVT_BUTTON,self.select_detector)
+		wx.Button.SetToolTip(button_detection,'A trained Detector can detect cell structures of your interest.')
+		self.text_detection=wx.StaticText(panel,label='None',style=wx.ALIGN_LEFT|wx.ST_ELLIPSIZE_END)
+		module_detection.Add(button_detection,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
+		module_detection.Add(self.text_detection,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
+		boxsizer.Add(module_detection,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
+		boxsizer.Add(0,5,0)
+
+		module_startanalyze=wx.BoxSizer(wx.HORIZONTAL)
+		button_startanalyze=wx.Button(panel,label='Specify when the stimulation\nis started (unit: frame)',size=(300,40))
+		button_startanalyze.Bind(wx.EVT_BUTTON,self.specify_timing)
+		wx.Button.SetToolTip(button_startanalyze,'Enter a time for all LIF/TIF files or use "Decode from filenames" for different times of different files. See Extended Guide for details.')
+		self.text_startanalyze=wx.StaticText(panel,label='Default: at the 5th frame.',style=wx.ALIGN_LEFT|wx.ST_ELLIPSIZE_END)
+		module_startanalyze.Add(button_startanalyze,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
+		module_startanalyze.Add(self.text_startanalyze,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
+		boxsizer.Add(module_startanalyze,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
+		boxsizer.Add(0,5,0)
+
+		module_duration=wx.BoxSizer(wx.HORIZONTAL)
+		button_duration=wx.Button(panel,label='Specify the analysis\nduration (unit: frame)',size=(300,40))
+		button_duration.Bind(wx.EVT_BUTTON,self.input_duration)
+		wx.Button.SetToolTip(button_duration,'The duration is the same for all the selected files.')
+		self.text_duration=wx.StaticText(panel,label='Default: the entire duration.',style=wx.ALIGN_LEFT|wx.ST_ELLIPSIZE_END)
+		module_duration.Add(button_duration,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
+		module_duration.Add(self.text_duration,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
+		boxsizer.Add(module_duration,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
+		boxsizer.Add(0,5,0)
+
+		module_cellnumber=wx.BoxSizer(wx.HORIZONTAL)
+		button_cellnumber=wx.Button(panel,label='Specify the number of\ncell structures',size=(300,40))
+		button_cellnumber.Bind(wx.EVT_BUTTON,self.specify_cellnumber)
+		wx.Button.SetToolTip(button_cellnumber,'Enter a number for all files or use "Decode from filenames" for different numbers in different files. See Extended Guide for details.')
+		self.text_cellnumber=wx.StaticText(panel,label='Default: 1.',style=wx.ALIGN_LEFT|wx.ST_ELLIPSIZE_END)
+		module_cellnumber.Add(button_cellnumber,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
+		module_cellnumber.Add(self.text_cellnumber,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
+		boxsizer.Add(module_cellnumber,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
+		boxsizer.Add(0,5,0)
+
+		button_analyze=wx.Button(panel,label='Start to analyze calcium signals',size=(300,40))
+		button_analyze.Bind(wx.EVT_BUTTON,self.analyze_calsignals)
+		wx.Button.SetToolTip(button_analyze,'Will output F0, dF/F0, Fmax, and frame-wise F.')
+		boxsizer.Add(0,5,0)
+		boxsizer.Add(button_analyze,0,wx.RIGHT|wx.ALIGN_RIGHT,90)
+		boxsizer.Add(0,10,0)
+
+		panel.SetSizer(boxsizer)
+
+		self.Centre()
+		self.Show(True)
+
+
+	def select_videos(self,event):
+
+		wildcard='LIF/TIF files (*.lif/*.tif)|*.lif;*.LIF;*.tif;*.TIF;*.tiff;*.TIFF'
+		dialog=wx.FileDialog(self,'Select LIF/TIF file(s)','','',wildcard,style=wx.FD_MULTIPLE)
+		if dialog.ShowModal()==wx.ID_OK:
+			self.path_to_lifs=dialog.GetPaths()
+			path=os.path.dirname(self.path_to_lifs[0])
+			self.text_inputvideos.SetLabel('Selected '+str(len(self.path_to_lifs))+' file(s) in: '+path+'.')
+		dialog.Destroy()
+
+
+	def select_outpath(self,event):
+
+		dialog=wx.DirDialog(self,'Select a directory','',style=wx.DD_DEFAULT_STYLE)
+		if dialog.ShowModal()==wx.ID_OK:
+			self.result_path=dialog.GetPath()
+			self.text_outputfolder.SetLabel('Results will be in: '+self.result_path+'.')
+		dialog.Destroy()
+
+
+	def select_detector(self,event):
+
+		self.cell_number={}
+		self.detector_path=os.path.join(the_absolute_current_path,'detectors')
+
+		detectors=[i for i in os.listdir(self.detector_path) if os.path.isdir(os.path.join(self.detector_path,i))]
+		if '__pycache__' in detectors:
+			detectors.remove('__pycache__')
+		if '__init__' in detectors:
+			detectors.remove('__init__')
+		if '__init__.py' in detectors:
+			detectors.remove('__init__.py')
+		detectors.sort()
+		if 'Choose a new directory of the Detector' not in detectors:
+			detectors.append('Choose a new directory of the Detector')
+
+		dialog=wx.SingleChoiceDialog(self,message='Select a Detector',caption='Select a Detector',choices=detectors)
+		if dialog.ShowModal()==wx.ID_OK:
+			detector=dialog.GetStringSelection()
+			if detector=='Choose a new directory of the Detector':
+				dialog1=wx.DirDialog(self,'Select a directory','',style=wx.DD_DEFAULT_STYLE)
+				if dialog1.ShowModal()==wx.ID_OK:
+					self.path_to_detector=dialog1.GetPaths()
+				dialog1.Destroy()
+			else:
+				self.path_to_detector=os.path.join(self.detector_path,detector)
+			with open(os.path.join(self.path_to_detector,'model_parameters.txt')) as f:
+				model_parameters=f.read()
+			cell_names=json.loads(model_parameters)['cell_names']
+			if len(cell_names)>1:
+				dialog1=wx.MultiChoiceDialog(self,message='Specify which neural structures involved in analysis',
+					caption='cell kind',choices=cell_names)
+				if dialog1.ShowModal()==wx.ID_OK:
+					self.cell_kinds=[cell_names[i] for i in dialog1.GetSelections()]
+				else:
+					self.cell_kinds=cell_names
+				dialog1.Destroy()
+			else:
+				self.cell_kinds=cell_names
+			for cell_name in self.cell_kinds:
+				self.cell_number[cell_name]=1
+			self.text_cellnumber.SetLabel('The number of '+str(self.cell_kinds)+' is: '+str(list(self.cell_number.values()))+'.')
+			self.text_detection.SetLabel('Detector: '+detector+'; '+'The cell structures: '+str(self.cell_kinds)+'.')
+		dialog.Destroy()
+
+		if torch.cuda.is_available():
+			dialog=wx.NumberEntryDialog(self,'Enter the batch size for faster processing',
+				'GPU is available in this device for Detectors.\nYou may use batch processing for faster speed.','Batch size',1,1,100)
+			if dialog.ShowModal()==wx.ID_OK:
+				self.detector_batch=int(dialog.GetValue())
+			else:
+				self.detector_batch=1
+			dialog.Destroy()
+
+
+	def specify_timing(self,event):
+
+		tif=False
+		for file in self.path_to_lifs:
+			if os.path.splitext(os.path.basename(file))[1] in ['.tif','.TIF','.tiff','.TIFF']:
+				tif=True
+
+		if tif:
+			methods=['Decode from filenames: "_bt_"','Enter a time point']
+		else:
+			methods=['Automatic (stimulation channel)','Decode from filenames: "_bt_"','Enter a time point']
+
+		dialog=wx.SingleChoiceDialog(self,message='Specify stimulation time (frame)',caption='Stimulation onset',choices=methods)
+		if dialog.ShowModal()==wx.ID_OK:
+			method=dialog.GetStringSelection()
+			if method=='Automatic (stimulation channel)':
+				self.autofind_t=True
+				self.decode_t=False
+				dialog1=wx.NumberEntryDialog(self,'Stimulation channel','Enter 0,1,2','Stimulation channel',0,0,2)
+				if dialog1.ShowModal()==wx.ID_OK:
+					self.stimulation_channel=int(dialog1.GetValue())
+				dialog1.Destroy()
+				text='Automatically find the stimulation onset in stimulation channel ('+str(self.stimulation_channel)+');'
+			elif method=='Decode from filenames: "_bt_"':
+				self.autofind_t=False
+				self.decode_t=True
+				text='Decode the time from the filenames: the "t" immediately after the letter "b"" in "_bt_";'
+			else:
+				self.autofind_t=False
+				self.decode_t=False
+				dialog1=wx.NumberEntryDialog(self,'Enter a time','The unit is frame:','Stimulation onset',5,0,100000000000000)
+				if dialog1.ShowModal()==wx.ID_OK:
+					self.t=int(dialog1.GetValue())
+				dialog1.Destroy()
+				text='Stimulation onset at: '+str(self.t)+' frame.'
+		dialog.Destroy()
+
+		if tif:
+			self.text_startanalyze.SetLabel(text)
+		else:
+			dialog=wx.NumberEntryDialog(self,'Main channel','Enter 0,1,2','Main channel',1,0,2)
+			if dialog.ShowModal()==wx.ID_OK:
+				self.main_channel=int(dialog.GetValue())
+			dialog.Destroy()
+			self.text_startanalyze.SetLabel(text+' main channel: '+str(self.main_channel)+'.')
+
+
+	def input_duration(self,event):
+
+		dialog=wx.NumberEntryDialog(self,'Enter the duration of the analysis','The unit is frame:','Analysis duration',0,0,100000000000000)
+		if dialog.ShowModal()==wx.ID_OK:
+			self.duration=int(dialog.GetValue())
+			if self.duration!=0:
+				self.text_duration.SetLabel('The analysis duration is '+str(self.duration)+' frames.')
+			else:
+				self.text_duration.SetLabel('The analysis duration is to the end of a file.')
+		dialog.Destroy()
+
+
+	def specify_cellnumber(self,event):
+
+		methods=['Decode from filenames: "_nn_"','Enter the number of neural structures']
+
+		dialog=wx.SingleChoiceDialog(self,message='Specify the number of neural structures',caption='The number of neural structures',
+			choices=methods)
+		if dialog.ShowModal()==wx.ID_OK:
+			method=dialog.GetStringSelection()
+			if method=='Enter the number of neural structures':
+				self.decode_cellnumber=False
+				self.cell_number={}
+				for cell_name in self.cell_kinds:
+					dialog1=wx.NumberEntryDialog(self,'','The number of '+str(cell_name)+': ',str(cell_name)+' number',1,1,100)
+					if dialog1.ShowModal()==wx.ID_OK:
+						self.cell_number[cell_name]=int(dialog1.GetValue())
+					else:
+						self.cell_number[cell_name]=1
+					dialog1.Destroy()
+				self.text_cellnumber.SetLabel('The number of '+str(self.cell_kinds)+' is: '+str(list(self.cell_number.values()))+'.')
+			else:
+				self.decode_cellnumber=True
+				self.text_cellnumber.SetLabel('Decode from the filenames: the "n" immediately after the letter "n" in _"nn"_.')
+		dialog.Destroy()
+
+
+	def analyze_calsignals(self,event):
+
+		if self.path_to_lifs is None or self.result_path is None or self.path_to_detector is None:
+
+			wx.MessageBox('No input file(s) / result folder / Detector.','Error',wx.OK|wx.ICON_ERROR)
+
+		else:
+
+			all_summary=[]
+			all_F=[]
+			names_summary=[]
+			names_F=[]
+
+			for i in self.path_to_lifs:
+
+				filename=os.path.splitext(os.path.basename(i))[0].split('_')
+				if self.decode_cellnumber:
+					self.cell_number={}
+					number=[x[1:] for x in filename if len(x)>1 and x[0]=='n']
+					for a,cell_name in enumerate(self.cell_kinds):
+						self.cell_number[cell_name]=int(number[a])
+				if self.decode_t:
+					for x in filename:
+						if len(x)>1:
+							if x[0]=='b':
+								self.t=int(x[1:])
+				if self.cell_number is None:
+					self.cell_number={}
+					for cell_name in self.cell_kinds:
+						self.cell_number[cell_name]=1
+
+				ACS=AnalyzeCalciumSignal(i,self.result_path,self.t,self.duration)
+				ACS.prepare_analysis(self.path_to_detector,self.cell_number,self.cell_kinds)
+				ACS.acquire_information(batch_size=self.detector_batch,autofind_t=self.autofind_t,
+					stimulation_channel=self.stimulation_channel,main_channel=self.main_channel)
+				ACS.craft_data()
+				ACS.annotate_video()
+				ACS.quantify_parameters(F0_period=self.F0_period,F_period=self.F_period)
+
+				basename=os.path.splitext(os.path.basename(i))[0]
+				individual_path=os.path.join(self.result_path,basename)
+
+				for cell_name in self.cell_kinds:
+					individual_summary=os.path.join(individual_path,cell_name+'_summary.xlsx')
+					individual_F=os.path.join(individual_path,cell_name+'_F.xlsx')
+					if os.path.exists(individual_summary):
+						all_summary.append(pd.read_excel(individual_summary))
+						names_summary.append(basename)
+					if os.path.exists(individual_F):
+						all_F.append(pd.read_excel(individual_F))
+						names_F.append(basename)
+
+			if len(all_summary)>=1:
+				all_summary=pd.concat(all_summary,keys=names_summary,names=['File name','ID/parameter'])
+				all_summary.drop(all_summary.columns[0],axis=1,inplace=True)
+				all_summary.to_excel(os.path.join(self.result_path,'all_summary.xlsx'),float_format='%.2f')
+			if len(all_F)>=1:
+				all_F=pd.concat(all_F,keys=names_F,names=['File name','frame/ID'])
+				all_F.drop(all_F.columns[0],axis=1,inplace=True)
+				all_F.to_excel(os.path.join(self.result_path,'all_F.xlsx'),float_format='%.2f')
+
+			print('Analysis completed!')
 
 
 
