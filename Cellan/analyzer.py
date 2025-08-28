@@ -961,7 +961,8 @@ class AnalyzeCalciumSignal():
 						#frame_project=np.array(frame_project).sum(0)/len(frame_project)
 						frame_project=np.array(frame_project).max(0)
 
-					frame_project[frame_project>255]=255
+					#frame_project[frame_project>255]=255
+					frame_project=exposure.rescale_intensity(frame_project,out_range=(0,255))
 					out_image=os.path.join(self.results_path,str(channel)+'_'+str(frame_count)+'.jpg')
 					cv2.imwrite(out_image,np.uint8(np.array(frame_project)))
 
