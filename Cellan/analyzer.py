@@ -678,7 +678,7 @@ class AnalyzeCalciumSignal():
 								print('Stimulation onset: at frame '+str(self.stim_t)+'.')
 
 				main_frames.append(frame_project)
-				frame_project[frame_project>255]=255
+				frame_project=exposure.rescale_intensity(frame_project,out_range=(0,255))
 				frame_project=cv2.cvtColor(np.uint8(frame_project),cv2.COLOR_GRAY2BGR)
 				images.append(frame_project)
 
@@ -816,7 +816,7 @@ class AnalyzeCalciumSignal():
 					frame_project=np.array(frame_project).sum(0)/len(frame_project)
 					#frame_project=np.array(frame_project).max(0)
 
-				frame_project[frame_project>255]=255
+				frame_project=exposure.rescale_intensity(frame_project,out_range=(0,255))
 				frame_project=cv2.cvtColor(np.uint8(frame_project),cv2.COLOR_GRAY2BGR)
 
 				if writer is None:
@@ -961,7 +961,6 @@ class AnalyzeCalciumSignal():
 						#frame_project=np.array(frame_project).sum(0)/len(frame_project)
 						frame_project=np.array(frame_project).max(0)
 
-					#frame_project[frame_project>255]=255
 					frame_project=exposure.rescale_intensity(frame_project,out_range=(0,255))
 					out_image=os.path.join(self.results_path,str(channel)+'_'+str(frame_count)+'.jpg')
 					cv2.imwrite(out_image,np.uint8(np.array(frame_project)))
