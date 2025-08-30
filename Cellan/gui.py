@@ -2417,7 +2417,7 @@ class WindowLv2_AnalyzeCalcium(wx.Frame):
 				model_parameters=f.read()
 			cell_names=json.loads(model_parameters)['cell_names']
 			if len(cell_names)>1:
-				dialog1=wx.MultiChoiceDialog(self,message='Specify which neural structures involved in analysis',
+				dialog1=wx.MultiChoiceDialog(self,message='Specify which cell structures involved in analysis',
 					caption='cell kind',choices=cell_names)
 				if dialog1.ShowModal()==wx.ID_OK:
 					self.cell_kinds=[cell_names[i] for i in dialog1.GetSelections()]
@@ -2477,6 +2477,11 @@ class WindowLv2_AnalyzeCalcium(wx.Frame):
 					self.t=int(dialog1.GetValue())
 				dialog1.Destroy()
 				text='Stimulation onset at: '+str(self.t)+' frame.'
+		else:
+			self.autofind_t=False
+			self.decode_t=False
+			self.t=5
+			text='Default: at the 5th frame.'
 		dialog.Destroy()
 
 		if tif:
@@ -2503,13 +2508,13 @@ class WindowLv2_AnalyzeCalcium(wx.Frame):
 
 	def specify_cellnumber(self,event):
 
-		methods=['Decode from filenames: "_nn_"','Enter the number of neural structures']
+		methods=['Decode from filenames: "_nn_"','Enter the number of cell structures']
 
-		dialog=wx.SingleChoiceDialog(self,message='Specify the number of neural structures',caption='The number of neural structures',
+		dialog=wx.SingleChoiceDialog(self,message='Specify the number of cell structures',caption='The number of cell structures',
 			choices=methods)
 		if dialog.ShowModal()==wx.ID_OK:
 			method=dialog.GetStringSelection()
-			if method=='Enter the number of neural structures':
+			if method=='Enter the number of cell structures':
 				self.decode_cellnumber=False
 				self.cell_number={}
 				for cell_name in self.cell_kinds:
