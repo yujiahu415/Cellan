@@ -83,13 +83,13 @@ class InitialPanel(wx.Panel):
 
 		module_modules=wx.BoxSizer(wx.HORIZONTAL)
 		button_preprocess=wx.Button(panel,label='Preprocessing Module',size=(250,40))
-		button_preprocess.Bind(wx.EVT_BUTTON,self.window_preprocess)
+		button_preprocess.Bind(wx.EVT_BUTTON,self.panel_preprocess)
 		wx.Button.SetToolTip(button_preprocess,'Enhance image contrast / crop images to exclude unnecessary region / downsize images to make the analysis more efficient.')
 		button_train=wx.Button(panel,label='Training Module',size=(250,40))
-		button_train.Bind(wx.EVT_BUTTON,self.window_train)
+		button_train.Bind(wx.EVT_BUTTON,self.panel_train)
 		wx.Button.SetToolTip(button_train,'Teach Cellan to recognize the cells of your interest.')
 		button_analyze=wx.Button(panel,label='Analysis Module',size=(250,40))
-		button_analyze.Bind(wx.EVT_BUTTON,self.window_analyze)
+		button_analyze.Bind(wx.EVT_BUTTON,self.panel_analyze)
 		wx.Button.SetToolTip(button_analyze,'Use Cellan to analyze cells in images.')
 		module_modules.Add(button_preprocess,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
 		module_modules.Add(button_train,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
@@ -103,33 +103,34 @@ class InitialPanel(wx.Panel):
 		self.Show(True)
 
 
-	def window_preprocess(self,event):
+	def panel_preprocess(self,event):
 
-		WindowLv1_ProcessModule('Preprocessing Module')
-
-
-	def window_train(self,event):
-
-		WindowLv1_TrainingModule('Training Module')
+		PanelLv1_ProcessModule('Preprocessing Module')
 
 
-	def window_analyze(self,event):
+	def panel_train(self,event):
 
-		WindowLv1_AnalysisModule('Analysis Module')
+		PanelLv1_TrainingModule('Training Module')
+
+
+	def panel_analyze(self,event):
+
+		PanelLv1_AnalysisModule('Analysis Module')
 
 
 
-class WindowLv1_ProcessModule(wx.Frame):
+class PanelLv1_ProcessModule(wx.Panel):
 
-	def __init__(self,title):
+	def __init__(self,parent):
 
-		super(WindowLv1_ProcessModule,self).__init__(parent=None,title=title,size=(500,230))
-		self.display_window()
+		super().__init__(parent)
+		self.notebook=parent
+		self.dispaly_window()
 
 
 	def display_window(self):
 
-		panel=wx.Panel(self)
+		panel=self
 		boxsizer=wx.BoxSizer(wx.VERTICAL)
 		boxsizer.Add(0,40,0)
 
@@ -153,20 +154,21 @@ class WindowLv1_ProcessModule(wx.Frame):
 
 	def process_images(self,event):
 
-		WindowLv2_ProcessImages('Preprocess Images')
+		PanelLv2_ProcessImages('Preprocess Images')
 
 
 	def draw_markers(self,event):
 
-		WindowLv2_DrawMarkers('Draw Markers')
+		PanelLv2_DrawMarkers('Draw Markers')
 
 
 
-class WindowLv2_ProcessImages(wx.Frame):
+class PanelLv2_ProcessImages(wx.Panel):
 
-	def __init__(self,title):
+	def __init__(self,parent):
 
-		super(WindowLv2_ProcessImages,self).__init__(parent=None,title=title,size=(1000,350))
+		super().__init__(parent)
+		self.notebook=parent
 		self.path_to_images=None
 		self.gray_scale=False
 		self.downsize_factor=None
@@ -184,7 +186,7 @@ class WindowLv2_ProcessImages(wx.Frame):
 
 	def display_window(self):
 
-		panel=wx.Panel(self)
+		panel=self
 		boxsizer=wx.BoxSizer(wx.VERTICAL)
 
 		module_inputimages=wx.BoxSizer(wx.HORIZONTAL)
@@ -535,11 +537,12 @@ class WindowLv2_ProcessImages(wx.Frame):
 
 
 
-class WindowLv2_DrawMarkers(wx.Frame):
+class PanelLv2_DrawMarkers(wx.Panel):
 
-	def __init__(self,title):
+	def __init__(self,parent):
 
-		super(WindowLv2_DrawMarkers,self).__init__(parent=None,title=title,size=(1000,220))
+		super().__init__(parent)
+		self.notebook=parent
 		self.path_to_videos=None # path to a batch of videos for marker drawing
 		self.framewidth=None # if not None, will resize the video frame keeping the original w:h ratio
 		self.result_path=None # the folder for storing videos with markers
