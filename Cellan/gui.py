@@ -49,17 +49,18 @@ class ColorPicker(wx.Dialog):
 
 
 
-class InitialWindow(wx.Frame):
+class InitialPanel(wx.Panel):
 
-	def __init__(self,title):
+	def __init__(self,parent):
 
-		super(InitialWindow,self).__init__(parent=None,title=title,size=(750,440))
+		super().__init__(parent)
+		self.notebook=parent
 		self.dispaly_window()
 
 
 	def dispaly_window(self):
 
-		panel=wx.Panel(self)
+		panel=self
 		boxsizer=wx.BoxSizer(wx.VERTICAL)
 
 		self.text_welcome=wx.StaticText(panel,label='Welcome to Cellan!',style=wx.ALIGN_CENTER|wx.ST_ELLIPSIZE_END)
@@ -81,13 +82,13 @@ class InitialWindow(wx.Frame):
 		boxsizer.Add(0,50,0)
 
 		module_modules=wx.BoxSizer(wx.HORIZONTAL)
-		button_preprocess=wx.Button(panel,label='Preprocessing Module',size=(200,40))
+		button_preprocess=wx.Button(panel,label='Preprocessing Module',size=(250,40))
 		button_preprocess.Bind(wx.EVT_BUTTON,self.window_preprocess)
 		wx.Button.SetToolTip(button_preprocess,'Enhance image contrast / crop images to exclude unnecessary region / downsize images to make the analysis more efficient.')
-		button_train=wx.Button(panel,label='Training Module',size=(200,40))
+		button_train=wx.Button(panel,label='Training Module',size=(250,40))
 		button_train.Bind(wx.EVT_BUTTON,self.window_train)
 		wx.Button.SetToolTip(button_train,'Teach Cellan to recognize the cells of your interest.')
-		button_analyze=wx.Button(panel,label='Analysis Module',size=(200,40))
+		button_analyze=wx.Button(panel,label='Analysis Module',size=(250,40))
 		button_analyze.Bind(wx.EVT_BUTTON,self.window_analyze)
 		wx.Button.SetToolTip(button_analyze,'Use Cellan to analyze cells in images.')
 		module_modules.Add(button_preprocess,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
