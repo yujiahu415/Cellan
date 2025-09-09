@@ -552,7 +552,7 @@ class PanelLv2_DrawMarkers(wx.Panel):
 
 	def display_window(self):
 
-		panel=wx.Panel(self)
+		panel=self
 		boxsizer=wx.BoxSizer(wx.VERTICAL)
 
 		module_inputvideos=wx.BoxSizer(wx.HORIZONTAL)
@@ -900,17 +900,18 @@ class WindowLv3_DrawMarkers(wx.Frame):
 
 
 
-class WindowLv1_TrainingModule(wx.Frame):
+class PanelLv1_TrainingModule(wx.Panel):
 
-	def __init__(self,title):
+	def __init__(self,parent):
 
-		super(WindowLv1_TrainingModule,self).__init__(parent=None,title=title,size=(500,400))
+		super().__init__(parent)
+		self.notebook=parent
 		self.dispaly_window()
 
 
 	def dispaly_window(self):
 
-		panel=wx.Panel(self)
+		panel=self
 		boxsizer=wx.BoxSizer(wx.VERTICAL)
 		boxsizer.Add(0,60,0)
 
@@ -954,30 +955,31 @@ class WindowLv1_TrainingModule(wx.Frame):
 
 	def generate_images_static(self,event):
 
-		WindowLv2_GenerateImagesStatic('Generate Image Examples (Static images)')
+		PanelLv2_GenerateImagesStatic('Generate Image Examples (Static images)')
 
 
 	def generate_images_time(self,event):
 
-		WindowLv2_GenerateImagesTime('Generate Image Examples (Time-series)')
+		PanelLv2_GenerateImagesTime('Generate Image Examples (Time-series)')
 
 
 	def train_detectors(self,event):
 
-		WindowLv2_TrainDetectors('Train Detectors')
+		PanelLv2_TrainDetectors('Train Detectors')
 
 
 	def test_detectors(self,event):
 
-		WindowLv2_TestDetectors('Test Detectors')
+		PanelLv2_TestDetectors('Test Detectors')
 
 
 
-class WindowLv2_GenerateImagesStatic(wx.Frame):
+class PanelLv2_GenerateImagesStatic(wx.Panel):
 
-	def __init__(self,title):
+	def __init__(self,parent):
 
-		super(WindowLv2_GenerateImagesStatic,self).__init__(parent=None,title=title,size=(1000,240))
+		super().__init__(parent)
+		self.notebook=parent
 		self.path_to_files=None
 		self.result_path=None
 		self.fov_dim=1280
@@ -988,7 +990,7 @@ class WindowLv2_GenerateImagesStatic(wx.Frame):
 
 	def dispaly_window(self):
 
-		panel=wx.Panel(self)
+		panel=self
 		boxsizer=wx.BoxSizer(wx.VERTICAL)
 
 		module_inputfiles=wx.BoxSizer(wx.HORIZONTAL)
@@ -1093,11 +1095,12 @@ class WindowLv2_GenerateImagesStatic(wx.Frame):
 
 
 
-class WindowLv2_GenerateImagesTime(wx.Frame):
+class PanelLv2_GenerateImagesTime(wx.Panel):
 
-	def __init__(self,title):
+	def __init__(self,parent):
 
-		super(WindowLv2_GenerateImagesTime,self).__init__(parent=None,title=title,size=(1000,330))
+		super().__init__(parent)
+		self.notebook=parent
 		self.path_to_lifs=None
 		self.result_path=None
 		self.t=0
@@ -1108,7 +1111,7 @@ class WindowLv2_GenerateImagesTime(wx.Frame):
 
 	def dispaly_window(self):
 
-		panel=wx.Panel(self)
+		panel=self
 		boxsizer=wx.BoxSizer(wx.VERTICAL)
 
 		module_inputvideos=wx.BoxSizer(wx.HORIZONTAL)
@@ -1250,11 +1253,12 @@ class WindowLv2_GenerateImagesTime(wx.Frame):
 
 
 
-class WindowLv2_TrainDetectors(wx.Frame):
+class PanelLv2_TrainDetectors(wx.Panel):
 
-	def __init__(self,title):
+	def __init__(self,parent):
 
-		super(WindowLv2_TrainDetectors,self).__init__(parent=None,title=title,size=(1000,280))
+		super().__init__(parent)
+		self.notebook=parent
 		self.path_to_trainingimages=None
 		self.path_to_annotation=None
 		self.num_rois=128
@@ -1419,11 +1423,12 @@ class WindowLv2_TrainDetectors(wx.Frame):
 
 
 
-class WindowLv2_TestDetectors(wx.Frame):
+class PanelLv2_TestDetectors(wx.Panel):
 
-	def __init__(self,title):
+	def __init__(self,parent):
 
-		super(WindowLv2_TestDetectors,self).__init__(parent=None,title=title,size=(1000,280))
+		super().__init__(parent)
+		self.notebook=parent
 		self.path_to_testingimages=None
 		self.path_to_annotation=None
 		self.detector_path=os.path.join(the_absolute_current_path,'detectors')
@@ -1586,17 +1591,18 @@ class WindowLv2_TestDetectors(wx.Frame):
 
 
 
-class WindowLv1_AnalysisModule(wx.Frame):
+class PanelLv1_AnalysisModule(wx.Panel):
 
-	def __init__(self,title):
+	def __init__(self,parent):
 
-		super(WindowLv1_AnalysisModule,self).__init__(parent=None,title=title,size=(500,340))
+		super().__init__(parent)
+		self.notebook=parent
 		self.dispaly_window()
 
 
 	def dispaly_window(self):
 
-		panel=wx.Panel(self)
+		panel=self
 		boxsizer=wx.BoxSizer(wx.VERTICAL)
 		boxsizer.Add(0,60,0)
 
@@ -1636,22 +1642,22 @@ class WindowLv1_AnalysisModule(wx.Frame):
 
 	def analyze_multichannels(self,event):
 
-		WindowLv2_AnalyzeMultiChannels('Analyze Multichannel Images')
+		PanelLv2_AnalyzeMultiChannels('Analyze Multichannel Images')
 
 
 	def analyze_singlechannels(self,event):
 
-		WindowLv2_AnalyzeSingleChannel('Analyze Singlechannel Images')
+		PanelLv2_AnalyzeSingleChannel('Analyze Singlechannel Images')
 
 
 	def calculate_intensities(self,event):
 
-		WindowLv2_CalculateTotalIntensity('Calculate Channel Intensities')
+		PanelLv2_CalculateTotalIntensity('Calculate Channel Intensities')
 
 
 	def analyze_calcium(self,event):
 
-		WindowLv2_AnalyzeCalcium('Analyze Calcium Signal')
+		PanelLv2_AnalyzeCalcium('Analyze Calcium Signal')
 
 
 
