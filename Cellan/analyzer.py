@@ -92,9 +92,9 @@ class AnalyzeCells():
 				detect_fov=np.uint8(exposure.rescale_intensity(detect_image[int(h*self.fov_dim):min(int((h+1)*self.fov_dim),height),int(w*self.fov_dim):min(int((w+1)*self.fov_dim),width)],out_range=(0,255)))
 				if detect_fov.shape[0]<self.fov_dim or detect_fov.shape[1]<self.fov_dim:
 					if self.black_background:
-						background=np.zeros((self.fov_dim,self.fov_dim),dtype='uint8')
+						background=np.zeros((self.fov_dim,self.fov_dim,3),dtype='uint8')
 					else:
-						background=np.uint8(np.ones((self.fov_dim,self.fov_dim),dtype='uint8')*255)
+						background=np.uint8(np.ones((self.fov_dim,self.fov_dim,3),dtype='uint8')*255)
 					background[:detect_fov.shape[0],:detect_fov.shape[1]]=detect_fov
 					detect_fov=background
 
