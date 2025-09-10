@@ -161,12 +161,16 @@ class PanelLv1_ProcessModule(wx.Panel):
 
 	def process_images(self,event):
 
-		PanelLv2_ProcessImages('Preprocess Images')
+		panel=PanelLv2_ProcessImages(self.notebook)
+		title='Preprocess Images'
+		self.notebook.AddPage(panel,title,select=True)
 
 
 	def draw_markers(self,event):
 
-		PanelLv2_DrawMarkers('Draw Markers')
+		panel=PanelLv2_DrawMarkers(self.notebook)
+		title='Draw Markers'
+		self.notebook.AddPage(panel,title,select=True)
 
 
 
