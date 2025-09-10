@@ -106,17 +106,23 @@ class InitialPanel(wx.Panel):
 
 	def panel_preprocess(self,event):
 
-		PanelLv1_ProcessModule('Preprocessing Module')
+		panel=PanelLv1_ProcessModule(self.notebook)
+		title='Preprocessing Module'
+		self.notebook.AddPage(panel,title,select=True)
 
 
 	def panel_train(self,event):
 
-		PanelLv1_TrainingModule('Training Module')
+		panel=PanelLv1_TrainingModule(self.notebook)
+		title='Training Module'
+		self.notebook.AddPage(panel,title,select=True)
 
 
 	def panel_analyze(self,event):
 
-		PanelLv1_AnalysisModule('Analysis Module')
+		panel=PanelLv1_AnalysisModule(self.notebook)
+		title='Analysis Module'
+		self.notebook.AddPage(panel,title,select=True)
 
 
 
