@@ -1292,7 +1292,7 @@ class PanelLv2_TrainDetectors(wx.Panel):
 
 	def display_window(self):
 
-		panel=wx.Panel(self)
+		panel=self
 		boxsizer=wx.BoxSizer(wx.VERTICAL)
 
 		module_selectimages=wx.BoxSizer(wx.HORIZONTAL)
@@ -1459,7 +1459,7 @@ class PanelLv2_TestDetectors(wx.Panel):
 
 	def display_window(self):
 
-		panel=wx.Panel(self)
+		panel=self
 		boxsizer=wx.BoxSizer(wx.VERTICAL)
 
 		module_selectdetector=wx.BoxSizer(wx.HORIZONTAL)
