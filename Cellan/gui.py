@@ -966,22 +966,30 @@ class PanelLv1_TrainingModule(wx.Panel):
 
 	def generate_images_static(self,event):
 
-		PanelLv2_GenerateImagesStatic('Generate Image Examples (Static images)')
+		panel=PanelLv2_GenerateImagesStatic(self.notebook)
+		title='Generate Image Examples (Static images)'
+		self.notebook.AddPage(panel,title,select=True)
 
 
 	def generate_images_time(self,event):
 
-		PanelLv2_GenerateImagesTime('Generate Image Examples (Time-series)')
+		panel=PanelLv2_GenerateImagesTime(self.notebook)
+		title='Generate Image Examples (Time-series)'
+		self.notebook.AddPage(panel,title,select=True)
 
 
 	def train_detectors(self,event):
 
-		PanelLv2_TrainDetectors('Train Detectors')
+		panel=PanelLv2_TrainDetectors(self.notebook)
+		title='Train Detectors'
+		self.notebook.AddPage(panel,title,select=True)
 
 
 	def test_detectors(self,event):
 
-		PanelLv2_TestDetectors('Test Detectors')
+		panel=PanelLv2_TestDetectors(self.notebook)
+		title='Test Detectors'
+		self.notebook.AddPage(panel,title,select=True)
 
 
 
