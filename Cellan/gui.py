@@ -56,10 +56,10 @@ class InitialPanel(wx.Panel):
 
 		super().__init__(parent)
 		self.notebook=parent
-		self.dispaly_window()
+		self.display_window()
 
 
-	def dispaly_window(self):
+	def display_window(self):
 
 		panel=self
 		boxsizer=wx.BoxSizer(wx.VERTICAL)
@@ -132,7 +132,7 @@ class PanelLv1_ProcessModule(wx.Panel):
 
 		super().__init__(parent)
 		self.notebook=parent
-		self.dispaly_window()
+		self.display_window()
 
 
 	def display_window(self):
@@ -917,10 +917,10 @@ class PanelLv1_TrainingModule(wx.Panel):
 
 		super().__init__(parent)
 		self.notebook=parent
-		self.dispaly_window()
+		self.display_window()
 
 
-	def dispaly_window(self):
+	def display_window(self):
 
 		panel=self
 		boxsizer=wx.BoxSizer(wx.VERTICAL)
@@ -1004,10 +1004,10 @@ class PanelLv2_GenerateImagesStatic(wx.Panel):
 		self.fov_dim=1280
 		self.black_background=True
 
-		self.dispaly_window()
+		self.display_window()
 
 
-	def dispaly_window(self):
+	def display_window(self):
 
 		panel=self
 		boxsizer=wx.BoxSizer(wx.VERTICAL)
@@ -1126,9 +1126,9 @@ class PanelLv2_GenerateImagesTime(wx.Panel):
 		self.duration=10
 		self.skip_redundant=10
 
-		self.dispaly_window()
+		self.display_window()
 
-	def dispaly_window(self):
+	def display_window(self):
 
 		panel=self
 		boxsizer=wx.BoxSizer(wx.VERTICAL)
@@ -1287,10 +1287,10 @@ class PanelLv2_TrainDetectors(wx.Panel):
 		self.detector_path=os.path.join(the_absolute_current_path,'detectors')
 		self.path_to_detector=None
 
-		self.dispaly_window()
+		self.display_window()
 
 
-	def dispaly_window(self):
+	def display_window(self):
 
 		panel=wx.Panel(self)
 		boxsizer=wx.BoxSizer(wx.VERTICAL)
@@ -1454,10 +1454,10 @@ class PanelLv2_TestDetectors(wx.Panel):
 		self.path_to_detector=None
 		self.output_path=None
 
-		self.dispaly_window()
+		self.display_window()
 
 
-	def dispaly_window(self):
+	def display_window(self):
 
 		panel=wx.Panel(self)
 		boxsizer=wx.BoxSizer(wx.VERTICAL)
@@ -1616,10 +1616,10 @@ class PanelLv1_AnalysisModule(wx.Panel):
 
 		super().__init__(parent)
 		self.notebook=parent
-		self.dispaly_window()
+		self.display_window()
 
 
-	def dispaly_window(self):
+	def display_window(self):
 
 		panel=self
 		boxsizer=wx.BoxSizer(wx.VERTICAL)
@@ -1709,10 +1709,10 @@ class PanelLv2_AnalyzeMultiChannels(wx.Panel):
 		self.show_ids=False
 		self.filters={}
 		
-		self.dispaly_window()
+		self.display_window()
 
 
-	def dispaly_window(self):
+	def display_window(self):
 
 		panel=self
 		boxsizer=wx.BoxSizer(wx.VERTICAL)
@@ -1956,10 +1956,10 @@ class PanelLv2_AnalyzeSingleChannel(wx.Panel):
 		self.show_ids=False
 		self.filters={}
 		
-		self.dispaly_window()
+		self.display_window()
 
 
-	def dispaly_window(self):
+	def display_window(self):
 
 		panel=self
 		boxsizer=wx.BoxSizer(wx.VERTICAL)
@@ -2212,10 +2212,10 @@ class PanelLv2_CalculateTotalIntensity(wx.Panel):
 		self.path_to_files=None
 		self.result_path=None
 		
-		self.dispaly_window()
+		self.display_window()
 
 
-	def dispaly_window(self):
+	def display_window(self):
 
 		panel=self
 		boxsizer=wx.BoxSizer(wx.VERTICAL)
@@ -2326,10 +2326,10 @@ class PanelLv2_AnalyzeCalcium(wx.Panel):
 		self.duration=0
 		self.F0_period=10
 		self.F_period=30
-		self.dispaly_window()
+		self.display_window()
 
 
-	def dispaly_window(self):
+	def display_window(self):
 
 		panel=self
 		boxsizer=wx.BoxSizer(wx.VERTICAL)
