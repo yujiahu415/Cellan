@@ -2,6 +2,7 @@ import os
 import cv2
 import numpy as np
 import wx
+import wx.aui
 import wx.lib.agw.hyperlink as hl
 from pathlib import Path
 import torch
@@ -1661,11 +1662,12 @@ class PanelLv1_AnalysisModule(wx.Panel):
 
 
 
-class WindowLv2_AnalyzeMultiChannels(wx.Frame):
+class PanelLv2_AnalyzeMultiChannels(wx.Panel):
 
-	def __init__(self,title):
+	def __init__(self,parent):
 
-		super(WindowLv2_AnalyzeMultiChannels,self).__init__(parent=None,title=title,size=(1000,390))
+		super().__init__(parent)
+		self.notebook=parent
 		self.detector_path=None
 		self.path_to_detector=None
 		self.cell_kinds=None
@@ -1686,7 +1688,7 @@ class WindowLv2_AnalyzeMultiChannels(wx.Frame):
 
 	def dispaly_window(self):
 
-		panel=wx.Panel(self)
+		panel=self
 		boxsizer=wx.BoxSizer(wx.VERTICAL)
 
 		module_inputfiles=wx.BoxSizer(wx.HORIZONTAL)
@@ -1909,11 +1911,12 @@ class WindowLv2_AnalyzeMultiChannels(wx.Frame):
 
 
 
-class WindowLv2_AnalyzeSingleChannel(wx.Frame):
+class PanelLv2_AnalyzeSingleChannel(wx.Panel):
 
-	def __init__(self,title):
+	def __init__(self,parent):
 
-		super(WindowLv2_AnalyzeSingleChannel,self).__init__(parent=None,title=title,size=(1000,340))
+		super().__init__(parent)
+		self.notebook=parent
 		self.detector_path=None
 		self.path_to_detector=None
 		self.cell_kinds=None
@@ -1932,7 +1935,7 @@ class WindowLv2_AnalyzeSingleChannel(wx.Frame):
 
 	def dispaly_window(self):
 
-		panel=wx.Panel(self)
+		panel=self
 		boxsizer=wx.BoxSizer(wx.VERTICAL)
 
 		module_inputfiles=wx.BoxSizer(wx.HORIZONTAL)
@@ -2174,11 +2177,12 @@ class WindowLv2_AnalyzeSingleChannel(wx.Frame):
 
 
 
-class WindowLv2_CalculateTotalIntensity(wx.Frame):
+class PanelLv2_CalculateTotalIntensity(wx.Panel):
 
-	def __init__(self,title):
+	def __init__(self,parent):
 
-		super(WindowLv2_CalculateTotalIntensity,self).__init__(parent=None,title=title,size=(1000,200))
+		super().__init__(parent)
+		self.notebook=parent
 		self.path_to_files=None
 		self.result_path=None
 		
@@ -2187,7 +2191,7 @@ class WindowLv2_CalculateTotalIntensity(wx.Frame):
 
 	def dispaly_window(self):
 
-		panel=wx.Panel(self)
+		panel=self
 		boxsizer=wx.BoxSizer(wx.VERTICAL)
 
 		module_inputfiles=wx.BoxSizer(wx.HORIZONTAL)
@@ -2274,11 +2278,12 @@ class WindowLv2_CalculateTotalIntensity(wx.Frame):
 
 
 
-class WindowLv2_AnalyzeCalcium(wx.Frame):
+class PanelLv2_AnalyzeCalcium(wx.Panel):
 
-	def __init__(self,title):
+	def __init__(self,parent):
 
-		super(WindowLv2_AnalyzeCalcium,self).__init__(parent=None,title=title,size=(1000,400))
+		super().__init__(parent)
+		self.notebook=parent
 		self.detector_path=None
 		self.path_to_detector=None
 		self.detector_batch=1
@@ -2300,7 +2305,7 @@ class WindowLv2_AnalyzeCalcium(wx.Frame):
 
 	def dispaly_window(self):
 
-		panel=wx.Panel(self)
+		panel=self
 		boxsizer=wx.BoxSizer(wx.VERTICAL)
 
 		module_inputvideos=wx.BoxSizer(wx.HORIZONTAL)
@@ -2603,6 +2608,32 @@ class WindowLv2_AnalyzeCalcium(wx.Frame):
 				all_F.to_excel(os.path.join(self.result_path,'all_F.xlsx'),float_format='%.2f')
 
 			print('Analysis completed!')
+
+
+
+class MainFrame(wx.Frame):
+
+	def __init__(self):
+		super().__init__(None,title=f'Cellan v{__version__}')
+		self.SetSize((1000,600))
+
+		self.aui_manager=wx.aui.AuiManager()
+		self.aui_manager.SetManagedWindow(self)
+
+		self.notebook=wx.aui.AuiNotebook(self)
+		self.aui_manager.AddPane(self.notebook,wx.aui.AuiPaneInfo().CenterPane())
+
+		panel=InitialPanel(self.notebook)
+		title='Welcome'
+		self.notebook.AddPage(panel,title,select=True)
+
+		sizer=wx.BoxSizer(wx.VERTICAL)
+		sizer.Add(self.notebook,1,wx.EXPAND)
+		self.SetSizer(sizer)
+
+		self.aui_manager.Update()
+		self.Centre()
+		self.Show()
 
 
 
