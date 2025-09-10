@@ -2639,9 +2639,8 @@ class MainFrame(wx.Frame):
 
 def main_window():
 
-	the_absolute_current_path=str(Path(__file__).resolve().parent)
 	app=wx.App()
-	InitialWindow(f'Cellan v{__version__}')
+	MainFrame()
 	print('The user interface initialized!')
 	app.MainLoop()
 
