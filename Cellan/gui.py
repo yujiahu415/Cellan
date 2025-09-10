@@ -1661,22 +1661,30 @@ class PanelLv1_AnalysisModule(wx.Panel):
 
 	def analyze_multichannels(self,event):
 
-		PanelLv2_AnalyzeMultiChannels('Analyze Multichannel Images')
+		panel=PanelLv2_AnalyzeMultiChannels(self.notebook)
+		title='Analyze Multichannel Images'
+		self.notebook.AddPage(panel,title,select=True)
 
 
 	def analyze_singlechannels(self,event):
 
-		PanelLv2_AnalyzeSingleChannel('Analyze Singlechannel Images')
+		panel=PanelLv2_AnalyzeSingleChannel(self.notebook)
+		title='Analyze Singlechannel Images'
+		self.notebook.AddPage(panel,title,select=True)
 
 
 	def calculate_intensities(self,event):
 
-		PanelLv2_CalculateTotalIntensity('Calculate Channel Intensities')
+		panel=PanelLv2_CalculateTotalIntensity(self.notebook)
+		title='Calculate Channel Intensities'
+		self.notebook.AddPage(panel,title,select=True)
 
 
 	def analyze_calcium(self,event):
 
-		PanelLv2_AnalyzeCalcium('Analyze Calcium Signal')
+		panel=PanelLv2_AnalyzeCalcium(self.notebook)
+		title='Analyze Calcium Signal'
+		self.notebook.AddPage(panel,title,select=True)
 
 
 
