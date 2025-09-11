@@ -41,7 +41,7 @@ class AnalyzeCells():
 		self.filters=filters
 
 
-	def analyze_multichannels(self,detection_channel=0,analysis_channels=[]):
+	def analyze_multichannels(self,detection_channel=0,analysis_channels=[],downsize_factor=50):
 
 		if self.lif:
 			lifdata=LifFile(self.path_to_file)
@@ -74,6 +74,8 @@ class AnalyzeCells():
 				cell_intensities[cell_name][c]=[]
 
 		detect_image=cv2.cvtColor(np.uint8(detect_image),cv2.COLOR_GRAY2BGR)
+		if downsize_factor:
+			detect_image=cv2.resize(detect_image,(int(detect_image.shape[1]*downsize_factor/100),int(detect_image.shape[0]*downsize_factor/100)),interpolation=cv2.INTER_AREA)
 		width=detect_image.shape[1]
 		height=detect_image.shape[0]
 		num_w=int(width/self.fov_dim)
@@ -102,12 +104,18 @@ class AnalyzeCells():
 				to_annotates={}
 				for c in analysis_channels:
 					if self.lif:
-						analysis_fov=np.array(file.get_frame(z=0,t=0,c=c))[int(h*self.fov_dim):min(int((h+1)*self.fov_dim),height),int(w*self.fov_dim):min(int((w+1)*self.fov_dim),width)]
+						analysis_image=np.array(file.get_frame(z=0,t=0,c=c))
+						if downsize_factor:
+							analysis_image=cv2.resize(analysis_image,(int(analysis_image.shape[1]*downsize_factor/100),int(analysis_image.shape[0]*downsize_factor/100)),interpolation=cv2.INTER_AREA)
+						analysis_fov=analysis_image[int(h*self.fov_dim):min(int((h+1)*self.fov_dim),height),int(w*self.fov_dim):min(int((w+1)*self.fov_dim),width)]
 					else:
+						analysis_image=imread(self.path_to_file)
+						if downsize_factor:
+							analysis_image=cv2.resize(analysis_image,(int(analysis_image.shape[1]*downsize_factor/100),int(analysis_image.shape[0]*downsize_factor/100)),interpolation=cv2.INTER_AREA)
 						if os.path.splitext(os.path.basename(self.path_to_file))[1] in ['.qptiff','.QPTIFF']:
-							analysis_fov=imread(self.path_to_file)[c,int(h*self.fov_dim):min(int((h+1)*self.fov_dim),height),int(w*self.fov_dim):min(int((w+1)*self.fov_dim),width)]
+							analysis_fov=analysis_image[c,int(h*self.fov_dim):min(int((h+1)*self.fov_dim),height),int(w*self.fov_dim):min(int((w+1)*self.fov_dim),width)]
 						else:
-							analysis_fov=imread(self.path_to_file)[int(h*self.fov_dim):min(int((h+1)*self.fov_dim),height),int(w*self.fov_dim):min(int((w+1)*self.fov_dim),width),c]
+							analysis_fov=analysis_image[int(h*self.fov_dim):min(int((h+1)*self.fov_dim),height),int(w*self.fov_dim):min(int((w+1)*self.fov_dim),width),c]						
 					if analysis_fov.shape[0]<self.fov_dim or analysis_fov.shape[1]<self.fov_dim:
 						if self.black_background:
 							background=np.zeros((self.fov_dim,self.fov_dim),dtype='uint8')
