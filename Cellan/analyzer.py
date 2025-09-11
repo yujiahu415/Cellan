@@ -41,7 +41,7 @@ class AnalyzeCells():
 		self.filters=filters
 
 
-	def analyze_multichannels(self,detection_channel=0,analysis_channels=[],downsize_factor=50):
+	def analyze_multichannels(self,detection_channel=0,analysis_channels=[],downsize_factor=None):
 
 		if self.lif:
 			lifdata=LifFile(self.path_to_file)
