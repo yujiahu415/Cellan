@@ -73,9 +73,9 @@ def extract_images(path_to_file,out_folder,fov_dim,black_background=True):
 						fov=np.uint8(exposure.rescale_intensity(image[int(h*fov_dim):min(int((h+1)*fov_dim),height),int(w*fov_dim):min(int((w+1)*fov_dim),width),c],out_range=(0,255)))
 						if fov.shape[0]<fov_dim or fov.shape[1]<fov_dim:
 							if black_background:
-								background=np.zeros((fov_dim,fov_dim,3),dtype='uint8')
+								background=np.zeros((fov_dim,fov_dim),dtype='uint8')
 							else:
-								background=np.uint8(np.ones((fov_dim,fov_dim,3),dtype='uint8')*255)
+								background=np.uint8(np.ones((fov_dim,fov_dim),dtype='uint8')*255)
 							background[:fov.shape[0],:fov.shape[1]]=fov
 							fov=background
 						cv2.imwrite(os.path.join(out_folder,os.path.splitext(os.path.basename(path_to_file))[0]+'_'+str(w)+str(h)+'_c'+str(c)+'.jpg'),cv2.cvtColor(fov,cv2.COLOR_GRAY2BGR),[cv2.IMWRITE_JPEG_QUALITY,100])
