@@ -1,3 +1,6 @@
+from .segmentation import read_detector_parameters, prepare_segmentation_jobs, validate_boundary_options, analysis_kinds, PALETTE
+from .tracking import validate_tracking, validate_tracking_method
+from .channels import MAPPING_FILENAME, load_mapping, validate_mapping, training_mapping
 import os
 import cv2
 import numpy as np
@@ -21,6 +24,321 @@ from Cellan import __version__
 
 
 the_absolute_current_path=str(Path(__file__).resolve().parent)
+
+
+
+def choose_detector_folder(parent,current_path=None):
+
+	"""List installed Detectors for both selection modes; cancel changes nothing."""
+	root=os.path.join(the_absolute_current_path,'detectors')
+	try:
+		detectors=sorted([name for name in os.listdir(root)
+			if name not in ('__pycache__','__init__','__init__.py') and os.path.isdir(os.path.join(root,name))]) if os.path.isdir(root) else []
+	except OSError as error:
+		wx.MessageBox(str(error),'Cannot list Detectors',wx.OK|wx.ICON_ERROR)
+		return None
+	external='Choose a new directory of the Detector'
+	choices=detectors+[external]
+	with wx.SingleChoiceDialog(parent,message='Select a Detector',caption='Select a Detector',choices=choices) as dialog:
+		dialog.SetSelection(0)
+		if current_path:
+			current=os.path.abspath(os.fspath(current_path))
+			selected=next((index for index,name in enumerate(detectors) if os.path.abspath(os.path.join(root,name))==current),len(detectors))
+			dialog.SetSelection(selected)
+		if dialog.ShowModal()!=wx.ID_OK:
+			return None
+		name=dialog.GetStringSelection()
+	if name==external:
+		with wx.DirDialog(parent,'Select a trained Detector folder',defaultPath=current_path or '',style=wx.DD_DEFAULT_STYLE) as dialog:
+			if dialog.ShowModal()!=wx.ID_OK:
+				return None
+			return dialog.GetPath()
+	return os.path.join(root,name)
+
+
+def choose_channel_mapping(parent, training=False):
+	"""Return (accepted, mapping); cancel never clears the current selection."""
+	choices=['Legacy single-channel / existing RGB images',
+		'Load channel-color mapping from a .txt file',
+		'Choose detection channels and colors']
+	with wx.SingleChoiceDialog(parent,'Choose how the detector images were prepared' if training else 'Choose detection image channels',
+		'Channel-color mapping',choices) as dialog:
+		if dialog.ShowModal()!=wx.ID_OK:
+			return False,None
+		choice=dialog.GetSelection()
+	if choice==0:
+		if training and wx.MessageBox('Use this only for images without a channel composite mapping. Composite training images require their original mapping.',
+			'Legacy images',wx.OK|wx.CANCEL|wx.ICON_INFORMATION)!=wx.OK:
+			return False,None
+		return True,None
+	try:
+		if choice==1:
+			with wx.FileDialog(parent,'Select channel_color_mapping.txt',wildcard='Mapping files (*.txt)|*.txt',style=wx.FD_OPEN|wx.FD_FILE_MUST_EXIST) as dialog:
+				if dialog.ShowModal()!=wx.ID_OK:
+					return False,None
+				return True,load_mapping(dialog.GetPath())
+		with wx.TextEntryDialog(parent,'Enter source channel indices separated by commas. First channel = 0.\nExample: 0,1 for DAPI and CD8.',
+			'Detection channels') as dialog:
+			if dialog.ShowModal()!=wx.ID_OK:
+				return False,None
+			indices=[int(value.strip()) for value in dialog.GetValue().split(',')]
+		if any(index<0 for index in indices) or len(set(indices))!=len(indices):
+			raise ValueError('Use unique nonnegative channel indices.')
+		entries=[]
+		for n,index in enumerate(indices):
+			data=wx.ColourData()
+			data.SetColour(wx.Colour(['#0000FF','#FF0000','#00FF00'][n%3]))
+			with wx.ColourDialog(parent,data) as dialog:
+				dialog.SetTitle('Display color for channel %s'%index)
+				if dialog.ShowModal()!=wx.ID_OK:
+					return False,None
+				color=dialog.GetColourData().GetColour()
+				entries.append({'index':index,'color':'#%02X%02X%02X'%(color.Red(),color.Green(),color.Blue())})
+		return True,validate_mapping({'version':1,'normalization':'per_tile_minmax','channels':entries})
+	except (ValueError,OSError) as error:
+		wx.MessageBox(str(error),'Invalid channel-color mapping',wx.OK|wx.ICON_ERROR)
+		return False,None
+
+
+def mapping_label(mapping):
+	if mapping is None:
+		return 'Legacy single-channel / existing RGB workflow'
+	return 'Detection: '+', '.join('%s = %s'%(entry['index'],entry['color']) for entry in mapping['channels'])
+
+
+def configure_object_tracking(panel):
+
+	"""Configure cross-type ID association; cancellation preserves settings."""
+	choices=['Keep object IDs independent','Match IDs between two object types']
+	with wx.SingleChoiceDialog(panel,'Choose how to assign detected object IDs','Object ID tracking',choices) as dialog:
+		dialog.SetSelection(1 if panel.tracking_classes is not None else 0)
+		if dialog.ShowModal()!=wx.ID_OK:
+			return
+		selection=dialog.GetSelection()
+	if selection==0:
+		panel.tracking_classes=None
+		panel.tracking_max_distance=None
+		panel.text_tracking.SetLabel('Object ID tracking: off')
+		panel.Layout()
+		return
+	if not panel.cell_kinds or len(panel.cell_kinds)<2:
+		wx.MessageBox('Select a Detector and at least two object types for analysis first.','Object ID tracking',wx.OK|wx.ICON_INFORMATION)
+		return
+	with wx.SingleChoiceDialog(panel,'Choose the first object type (for example, nuclei)','Reference object type',panel.cell_kinds) as dialog:
+		if dialog.ShowModal()!=wx.ID_OK:
+			return
+		reference=dialog.GetStringSelection()
+	others=[kind for kind in panel.cell_kinds if kind!=reference]
+	with wx.SingleChoiceDialog(panel,'Choose the second object type (for example, soma)','Associated object type',others) as dialog:
+		if dialog.ShowModal()!=wx.ID_OK:
+			return
+		target=dialog.GetStringSelection()
+	methods=['Centroid distance','Mask IoU (intersection / union)']
+	with wx.SingleChoiceDialog(panel,'Choose the association method','Matching method',methods) as dialog:
+		dialog.SetSelection(1 if panel.tracking_method=='iou' else 0)
+		if dialog.ShowModal()!=wx.ID_OK:
+			return
+		method='iou' if dialog.GetSelection()==1 else 'distance'
+	limit=None
+	min_iou=panel.tracking_min_iou
+	if method=='distance':
+		value='' if panel.tracking_max_distance is None else str(panel.tracking_max_distance)
+		with wx.TextEntryDialog(panel,'Maximum distance between mask centroids, in analyzed-image pixels.\nLeave blank or enter 0 for no limit. Unmatched objects are discarded.',
+			'Maximum matching distance',value) as dialog:
+			if dialog.ShowModal()!=wx.ID_OK:
+				return
+			try:
+				entry=dialog.GetValue().strip()
+				limit=float(entry) if entry else 0.0
+				classes,limit=validate_tracking((reference,target),panel.cell_kinds,None if limit==0 else limit)
+			except ValueError as error:
+				wx.MessageBox(str(error),'Invalid matching distance',wx.OK|wx.ICON_ERROR)
+				return
+		label='centroid distance; max: '+('unlimited' if limit is None else str(limit)+' px')
+	else:
+		with wx.TextEntryDialog(panel,'Minimum mask IoU = intersection area / union area.\nEnter a ratio from 0 to 1 (0.1 = 10%, 0.5 = 50%).\n0 accepts any positive overlap; disjoint masks never match.\nUnmatched objects are discarded.',
+			'Minimum mask overlap (IoU)',str(min_iou)) as dialog:
+			if dialog.ShowModal()!=wx.ID_OK:
+				return
+			try:
+				method,min_iou=validate_tracking_method(method,dialog.GetValue().strip())
+				classes,_=validate_tracking((reference,target),panel.cell_kinds)
+			except ValueError as error:
+				wx.MessageBox(str(error),'Invalid minimum IoU',wx.OK|wx.ICON_ERROR)
+				return
+		label='mask IoU; minimum: '+str(min_iou)
+	panel.tracking_classes=classes
+	panel.tracking_max_distance=limit
+	panel.tracking_method=method
+	panel.tracking_min_iou=min_iou
+	panel.show_ids=True
+	panel.text_tracking.SetLabel('Track '+reference+' + '+target+'; '+label+'; discard unmatched')
+	panel.Layout()
+
+
+
+class MultiDetectorDialog(wx.Dialog):
+
+	def __init__(self,parent):
+
+		super().__init__(parent,title='Detectors, source channels and boundary channels',size=(780,600),style=wx.DEFAULT_DIALOG_STYLE|wx.RESIZE_BORDER)
+		self.assignments=[dict(job) for job in (parent.segmentation_jobs or [])]
+		self.boundary_sources=list(parent.boundary_sources)
+		self.result=None
+		root=wx.BoxSizer(wx.VERTICAL)
+		root.Add(wx.StaticText(self,label='Assign each Detector to source channels. First channel = 0. Saved RGB colors are preserved.'),0,wx.ALL,10)
+		self.job_list=wx.ListBox(self)
+		root.Add(self.job_list,1,wx.EXPAND|wx.LEFT|wx.RIGHT,10)
+		buttons=wx.BoxSizer(wx.HORIZONTAL)
+		for label,handler in [('Add Detector',self.add_job),('Edit selected',self.edit_job),('Remove selected',self.remove_job)]:
+			button=wx.Button(self,label=label)
+			button.Bind(wx.EVT_BUTTON,handler)
+			buttons.Add(button,0,wx.RIGHT,8)
+		root.Add(buttons,0,wx.ALL,10)
+		root.Add(wx.StaticText(self,label='Boundary channels: checked assignments supply boundary masks; all others supply masks for quantification.'),0,wx.LEFT|wx.RIGHT|wx.BOTTOM,10)
+		self.boundary_list=wx.CheckListBox(self)
+		root.Add(self.boundary_list,1,wx.EXPAND|wx.LEFT|wx.RIGHT,10)
+		options=wx.BoxSizer(wx.HORIZONTAL)
+		options.Add(wx.StaticText(self,label='Require containment in:'),0,wx.ALIGN_CENTER_VERTICAL|wx.RIGHT,8)
+		self.rule=wx.Choice(self,choices=['All selected boundary channels','Any selected boundary channel'])
+		self.rule.SetSelection(1 if parent.boundary_mode=='any' else 0)
+		options.Add(self.rule,1)
+		root.Add(options,0,wx.EXPAND|wx.ALL,10)
+		fraction=wx.BoxSizer(wx.HORIZONTAL)
+		fraction.Add(wx.StaticText(self,label='Minimum fraction of analysis mask inside one boundary object (1 = entire mask):'),1,wx.ALIGN_CENTER_VERTICAL|wx.RIGHT,8)
+		self.inside_fraction=wx.TextCtrl(self,value=str(parent.boundary_min_fraction),size=(85,-1))
+		fraction.Add(self.inside_fraction,0)
+		root.Add(fraction,0,wx.EXPAND|wx.LEFT|wx.RIGHT|wx.BOTTOM,10)
+		self.show_ids=wx.CheckBox(self,label='Show object IDs in annotated images (boundary IDs have a B prefix)')
+		self.show_ids.SetValue(parent.show_ids)
+		root.Add(self.show_ids,0,wx.LEFT|wx.RIGHT|wx.BOTTOM,10)
+		apply=wx.Button(self,wx.ID_OK,label='Use these Detectors')
+		apply.Bind(wx.EVT_BUTTON,self.apply_settings)
+		cancel=wx.Button(self,wx.ID_CANCEL)
+		standard=wx.StdDialogButtonSizer()
+		standard.AddButton(apply)
+		standard.AddButton(cancel)
+		standard.Realize()
+		root.Add(standard,0,wx.ALIGN_RIGHT|wx.ALL,10)
+		self.SetSizer(root)
+		self.refresh_jobs()
+		self.CentreOnParent()
+
+
+	def current_boundaries(self):
+
+		return [self.assignments[index]['name'] for index in self.boundary_list.GetCheckedItems()]
+
+
+	def refresh_jobs(self):
+
+		self.job_list.Set([job['name']+' | '+('RGB mapping '+str(job['channel_color_mapping']['channels']) if job.get('channel_color_mapping') is not None else 'channel '+str(job['detection_channel']))+
+			' | '+os.path.basename(job['path_to_detector'])+' | '+', '.join(job['cell_kinds']) for job in self.assignments])
+		self.boundary_list.Set([job['name'] for job in self.assignments])
+		self.boundary_list.SetCheckedItems([index for index,job in enumerate(self.assignments) if job['name'] in self.boundary_sources])
+
+
+	def _choose_job(self,existing=None):
+
+		folder=choose_detector_folder(self,existing['path_to_detector'] if existing else None)
+		if folder is None:
+			return None
+		try:
+			parameters=read_detector_parameters(folder)
+			with wx.TextEntryDialog(self,'Assignment name: letters, numbers, underscores or hyphens.','Detector assignment',existing['name'] if existing else 'Detector'+str(len(self.assignments)+1)) as dialog:
+				if dialog.ShowModal()!=wx.ID_OK:
+					return None
+				name=dialog.GetValue().strip()
+			with wx.MultiChoiceDialog(self,'Select the object types for this assignment','Object types',parameters['cell_names']) as dialog:
+				dialog.SetSelections([index for index,kind in enumerate(parameters['cell_names']) if existing is None or kind in existing['cell_kinds']])
+				if dialog.ShowModal()!=wx.ID_OK:
+					return None
+				kinds=[parameters['cell_names'][index] for index in dialog.GetSelections()]
+			channel=existing.get('detection_channel',0) if existing else 0
+			remap={}
+			if parameters.get('channel_color_mapping') is None:
+				with wx.NumberEntryDialog(self,'Source channel for this Detector (first channel = 0)','Channel index','Detection source channel',channel,0,1000000) as dialog:
+					if dialog.ShowModal()!=wx.ID_OK:
+						return None
+					channel=int(dialog.GetValue())
+			else:
+				mapping=validate_mapping(parameters['channel_color_mapping'])
+				for entry in mapping['channels']:
+					trained=entry['index']
+					default=existing.get('channel_remap',{}).get(str(trained),trained) if existing else trained
+					with wx.NumberEntryDialog(self,'Source channel for trained channel '+str(trained)+' (RGB color '+entry['color']+'). First source channel = 0.',
+						'Source channel index','Reassign Detector input channel',default,0,1000000) as dialog:
+						if dialog.ShowModal()!=wx.ID_OK:
+							return None
+						remap[str(trained)]=int(dialog.GetValue())
+			with wx.NumberEntryDialog(self,'Minimum detection confidence','Percent (0 to 100)','Detection confidence',round(existing.get('score_threshold',0)*100) if existing else 0,0,100) as dialog:
+				if dialog.ShowModal()!=wx.ID_OK:
+					return None
+				threshold=int(dialog.GetValue())/100
+			return prepare_segmentation_jobs([{'name':name,'path_to_detector':folder,'detection_channel':channel,'cell_kinds':kinds,'score_threshold':threshold,'channel_remap':remap}])[0]
+		except (ValueError,OSError,KeyError,TypeError) as error:
+			wx.MessageBox(str(error),'Invalid Detector assignment',wx.OK|wx.ICON_ERROR)
+			return None
+
+
+	def add_job(self,event):
+
+		job=self._choose_job()
+		if job is None:
+			return
+		try:
+			assignments=prepare_segmentation_jobs(self.assignments+[job])
+		except (ValueError,OSError) as error:
+			wx.MessageBox(str(error),'Invalid Detector assignment',wx.OK|wx.ICON_ERROR)
+			return
+		self.boundary_sources=self.current_boundaries()
+		self.assignments=assignments
+		self.refresh_jobs()
+
+
+	def edit_job(self,event):
+
+		index=self.job_list.GetSelection()
+		if index==wx.NOT_FOUND:
+			return
+		job=self._choose_job(self.assignments[index])
+		if job is None:
+			return
+		updated=list(self.assignments)
+		updated[index]=job
+		try:
+			updated=prepare_segmentation_jobs(updated)
+		except (ValueError,OSError) as error:
+			wx.MessageBox(str(error),'Invalid Detector assignment',wx.OK|wx.ICON_ERROR)
+			return
+		selected=self.current_boundaries()
+		old_name=self.assignments[index]['name']
+		self.boundary_sources=[job['name'] if name==old_name else name for name in selected]
+		self.assignments=updated
+		self.refresh_jobs()
+
+
+	def remove_job(self,event):
+
+		index=self.job_list.GetSelection()
+		if index==wx.NOT_FOUND:
+			return
+		selected=self.current_boundaries()
+		removed=self.assignments.pop(index)['name']
+		self.boundary_sources=[name for name in selected if name!=removed]
+		self.refresh_jobs()
+
+
+	def apply_settings(self,event):
+
+		try:
+			jobs=prepare_segmentation_jobs(self.assignments)
+			sources,mode,fraction=validate_boundary_options(self.current_boundaries(),jobs,'any' if self.rule.GetSelection()==1 else 'all',self.inside_fraction.GetValue().strip())
+		except (ValueError,OSError,KeyError,TypeError) as error:
+			wx.MessageBox(str(error),'Invalid segmentation settings',wx.OK|wx.ICON_ERROR)
+			return
+		self.result=(jobs,sources,mode,fraction)
+		self.EndModal(wx.ID_OK)
 
 
 
@@ -1004,6 +1322,8 @@ class PanelLv2_GenerateImagesStatic(wx.Panel):
 		self.fov_dim=1280
 		self.black_background=True
 
+		self.channel_color_mapping=None
+		self.mapping_confirmed=False
 		self.display_window()
 
 
@@ -1011,6 +1331,12 @@ class PanelLv2_GenerateImagesStatic(wx.Panel):
 
 		panel=self
 		boxsizer=wx.BoxSizer(wx.VERTICAL)
+		mapping_button=wx.Button(panel,label='Set detection channels and colors',size=(300,40))
+		mapping_button.Bind(wx.EVT_BUTTON,self.select_channel_mapping)
+		boxsizer.Add(mapping_button,0,wx.ALL,10)
+		self.text_mapping=wx.StaticText(panel,label=mapping_label(self.channel_color_mapping))
+		boxsizer.Add(self.text_mapping,0,wx.LEFT|wx.BOTTOM,10)
+
 
 		module_inputfiles=wx.BoxSizer(wx.HORIZONTAL)
 		button_inputfiles=wx.Button(panel,label='Select the LIF/TIF/SVS/QPTIFF file(s)\nto generate image examples',size=(300,40))
@@ -1109,9 +1435,23 @@ class PanelLv2_GenerateImagesStatic(wx.Panel):
 
 			print('Generating image examples...')
 			for i in self.path_to_files:
-				extract_images(i,self.result_path,self.fov_dim,black_background=self.black_background)
+				try:
+					extract_images(i,self.result_path,self.fov_dim,black_background=self.black_background,channel_color_mapping=self.channel_color_mapping)
+				except (ValueError,OSError) as error:
+					wx.MessageBox(str(error),'Image extraction failed',wx.OK|wx.ICON_ERROR)
+					return
 			print('Image example generation completed!')
 
+
+
+
+	def select_channel_mapping(self,event):
+		accepted,mapping=choose_channel_mapping(self,training=False)
+		if accepted:
+			self.channel_color_mapping=mapping
+			self.mapping_confirmed=True
+			self.text_mapping.SetLabel(mapping_label(mapping))
+			self.Layout()
 
 
 class PanelLv2_GenerateImagesTime(wx.Panel):
@@ -1287,6 +1627,8 @@ class PanelLv2_TrainDetectors(wx.Panel):
 		self.detector_path=os.path.join(the_absolute_current_path,'detectors')
 		self.path_to_detector=None
 
+		self.channel_color_mapping=None
+		self.mapping_confirmed=False
 		self.display_window()
 
 
@@ -1294,6 +1636,12 @@ class PanelLv2_TrainDetectors(wx.Panel):
 
 		panel=self
 		boxsizer=wx.BoxSizer(wx.VERTICAL)
+		mapping_button=wx.Button(panel,label='Set detection channels and colors',size=(300,40))
+		mapping_button.Bind(wx.EVT_BUTTON,self.select_channel_mapping)
+		boxsizer.Add(mapping_button,0,wx.ALL,10)
+		self.text_mapping=wx.StaticText(panel,label=mapping_label(self.channel_color_mapping))
+		boxsizer.Add(self.text_mapping,0,wx.LEFT|wx.BOTTOM,10)
+
 
 		module_selectimages=wx.BoxSizer(wx.HORIZONTAL)
 		button_selectimages=wx.Button(panel,label='Select the folder containing\nall the training images',size=(300,40))
@@ -1354,6 +1702,17 @@ class PanelLv2_TrainDetectors(wx.Panel):
 		dialog=wx.DirDialog(self,'Select a directory','',style=wx.DD_DEFAULT_STYLE)
 		if dialog.ShowModal()==wx.ID_OK:
 			self.path_to_trainingimages=dialog.GetPath()
+			self.mapping_confirmed=False
+			self.channel_color_mapping=None
+			mapping_path=os.path.join(self.path_to_trainingimages,MAPPING_FILENAME)
+			if os.path.isfile(mapping_path):
+				try:
+					self.channel_color_mapping=load_mapping(mapping_path)
+					self.mapping_confirmed=True
+				except (ValueError,OSError) as error:
+					wx.MessageBox(str(error),'Invalid channel-color mapping',wx.OK|wx.ICON_ERROR)
+			self.text_mapping.SetLabel(mapping_label(self.channel_color_mapping))
+
 			self.text_selectimages.SetLabel('Path to training images: '+self.path_to_trainingimages+'.')
 		dialog.Destroy()
 
@@ -1403,6 +1762,11 @@ class PanelLv2_TrainDetectors(wx.Panel):
 
 		else:
 
+			if not self.mapping_confirmed:
+				self.select_channel_mapping(event)
+				if not self.mapping_confirmed:
+					return
+
 			cell_sizes=['Sparse and large (e.g., large tissue areas)','Median (e.g., structures formed by group of cells)','Small (e.g. typical cell bodies)','Extremely small (e.g., dense subcellular structures)']
 			dialog=wx.SingleChoiceDialog(self,message='How large are the objects to detect\ncompared to the images?',caption='Object size',choices=cell_sizes)
 			if dialog.ShowModal()==wx.ID_OK:
@@ -1417,7 +1781,17 @@ class PanelLv2_TrainDetectors(wx.Panel):
 					self.num_rois=1024
 			dialog.Destroy()
 
+			try:
+				self.channel_color_mapping=training_mapping(self.path_to_trainingimages,self.channel_color_mapping)
+				self.text_mapping.SetLabel(mapping_label(self.channel_color_mapping))
+			except (ValueError,OSError) as error:
+				wx.MessageBox(str(error),'Invalid training mapping',wx.OK|wx.ICON_ERROR)
+				return
+
 			images=[i for i in os.listdir(self.path_to_trainingimages) if i.endswith('.jpg') or i.endswith('.png') or i.endswith('.tif') or i.endswith('.tiff')]
+			if not images:
+				wx.MessageBox('No training images found.','Error',wx.OK|wx.ICON_ERROR)
+				return
 			self.inference_size=int(cv2.imread(os.path.join(self.path_to_trainingimages,images[0])).shape[1])
 
 			do_nothing=False
@@ -1438,8 +1812,18 @@ class PanelLv2_TrainDetectors(wx.Panel):
 
 			if do_nothing is False:
 				DT=Detector()
-				DT.train(self.path_to_annotation,self.path_to_trainingimages,self.path_to_detector,self.iteration_num,self.inference_size,self.num_rois,black_background=self.black_background)
+				DT.train(self.path_to_annotation,self.path_to_trainingimages,self.path_to_detector,self.iteration_num,self.inference_size,self.num_rois,black_background=self.black_background,channel_color_mapping=self.channel_color_mapping)
 
+
+
+
+	def select_channel_mapping(self,event):
+		accepted,mapping=choose_channel_mapping(self,training=True)
+		if accepted:
+			self.channel_color_mapping=mapping
+			self.mapping_confirmed=True
+			self.text_mapping.SetLabel(mapping_label(mapping))
+			self.Layout()
 
 
 class PanelLv2_TestDetectors(wx.Panel):
@@ -1704,10 +2088,19 @@ class PanelLv2_AnalyzeMultiChannels(wx.Panel):
 		self.fov_dim=1280
 		self.names_colors=None
 		self.detection_channel=0
+		self.channel_color_mapping=None
 		self.analysis_channels=[]
 		self.black_background=True
 		self.show_ids=False
 		self.filters={}
+		self.tracking_classes=None
+		self.tracking_max_distance=None
+		self.tracking_method='distance'
+		self.tracking_min_iou=0.1
+		self.segmentation_jobs=None
+		self.boundary_sources=()
+		self.boundary_mode='all'
+		self.boundary_min_fraction=1.0
 		
 		self.display_window()
 
@@ -1739,13 +2132,23 @@ class PanelLv2_AnalyzeMultiChannels(wx.Panel):
 		boxsizer.Add(0,5,0)
 
 		module_detection=wx.BoxSizer(wx.HORIZONTAL)
-		button_detection=wx.Button(panel,label='Select the Detector to\ndetect cells',size=(300,40))
+		button_detection=wx.Button(panel,label='Select Detector(s)',size=(300,40))
 		button_detection.Bind(wx.EVT_BUTTON,self.select_detector)
-		wx.Button.SetToolTip(button_detection,'A trained Detector can detect cells of your interest.')
+		wx.Button.SetToolTip(button_detection,'Select one Detector, or configure multiple Detectors with source channels and boundary channels.')
 		self.text_detection=wx.StaticText(panel,label='None',style=wx.ALIGN_LEFT|wx.ST_ELLIPSIZE_END)
 		module_detection.Add(button_detection,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
 		module_detection.Add(self.text_detection,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
 		boxsizer.Add(module_detection,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
+		boxsizer.Add(0,5,0)
+
+		module_tracking=wx.BoxSizer(wx.HORIZONTAL)
+		button_tracking=wx.Button(panel,label='Match IDs between object types',size=(300,40))
+		button_tracking.Bind(wx.EVT_BUTTON,lambda event:configure_object_tracking(self))
+		wx.Button.SetToolTip(button_tracking,'Associate two object types by centroid distance or mask IoU, one-to-one across the image. Set a maximum distance or minimum IoU ratio. Matched objects share an ID; unmatched objects of those types are discarded.')
+		self.text_tracking=wx.StaticText(panel,label='Object ID tracking: off',style=wx.ALIGN_LEFT|wx.ST_ELLIPSIZE_END)
+		module_tracking.Add(button_tracking,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
+		module_tracking.Add(self.text_tracking,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
+		boxsizer.Add(module_tracking,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
 		boxsizer.Add(0,5,0)
 
 		module_expansion=wx.BoxSizer(wx.HORIZONTAL)
@@ -1803,73 +2206,83 @@ class PanelLv2_AnalyzeMultiChannels(wx.Panel):
 
 	def select_detector(self,event):
 
+		choices=['Select one Detector','Select multiple Detectors']
+		with wx.SingleChoiceDialog(self,'Use one Detector or multiple Detectors?','Detector selection',choices) as dialog:
+			dialog.SetSelection(1 if self.segmentation_jobs is not None else 0)
+			if dialog.ShowModal()!=wx.ID_OK:
+				return
+			selection=dialog.GetSelection()
+		if selection==1:
+			self.configure_multiple_detectors(event)
+		else:
+			self.select_single_detector(event)
+
+
+	def select_single_detector(self,event):
+
+		folder=choose_detector_folder(self,self.path_to_detector)
+		if folder is None:
+			return
+		try:
+			parameters=read_detector_parameters(folder)
+			mapping=parameters.get('channel_color_mapping')
+			if mapping is not None:
+				mapping=validate_mapping(mapping)
+			cell_names=parameters['cell_names']
+			frame=int(parameters['inferencing_framesize'])
+			black_background=int(parameters['black_background'])==0
+		except (ValueError,OSError,KeyError,TypeError) as error:
+			wx.MessageBox(str(error),'Invalid Detector',wx.OK|wx.ICON_ERROR)
+			return
 		self.detector_path=os.path.join(the_absolute_current_path,'detectors')
-
-		detectors=[i for i in os.listdir(self.detector_path) if os.path.isdir(os.path.join(self.detector_path,i))]
-		if '__pycache__' in detectors:
-			detectors.remove('__pycache__')
-		if '__init__' in detectors:
-			detectors.remove('__init__')
-		if '__init__.py' in detectors:
-			detectors.remove('__init__.py')
-		detectors.sort()
-		if 'Choose a new directory of the Detector' not in detectors:
-			detectors.append('Choose a new directory of the Detector')
-
-		dialog=wx.SingleChoiceDialog(self,message='Select a Detector',caption='Select a Detector',choices=detectors)
-		if dialog.ShowModal()==wx.ID_OK:
-			detector=dialog.GetStringSelection()
-			if detector=='Choose a new directory of the Detector':
-				dialog1=wx.DirDialog(self,'Select a directory','',style=wx.DD_DEFAULT_STYLE)
-				if dialog1.ShowModal()==wx.ID_OK:
-					self.path_to_detector=dialog1.GetPaths()
-				dialog1.Destroy()
-			else:
-				self.path_to_detector=os.path.join(self.detector_path,detector)
-			with open(os.path.join(self.path_to_detector,'model_parameters.txt')) as f:
-				model_parameters=f.read()
-			cell_names=json.loads(model_parameters)['cell_names']
-			self.fov_dim=int(json.loads(model_parameters)['inferencing_framesize'])
-			if int(json.loads(model_parameters)['black_background'])==0:
-				self.black_background=True
-			else:
-				self.black_background=False
-			if len(cell_names)>1:
-				dialog1=wx.MultiChoiceDialog(self,message='Specify which cells involved in analysis',
-					caption='Cell kind',choices=cell_names)
-				if dialog1.ShowModal()==wx.ID_OK:
-					self.cell_kinds=[cell_names[i] for i in dialog1.GetSelections()]
-				else:
-					self.cell_kinds=cell_names
-				dialog1.Destroy()
+		self.path_to_detector=folder
+		detector=os.path.basename(folder)
+		self.channel_color_mapping=mapping
+		self.segmentation_jobs=None
+		self.boundary_sources=()
+		self.text_channels.SetLabel(mapping_label(mapping)+'; analysis: '+str(self.analysis_channels or 'all'))
+		self.fov_dim=frame
+		self.black_background=black_background
+		if len(cell_names)>1:
+			dialog1=wx.MultiChoiceDialog(self,message='Specify which cells involved in analysis',
+				caption='Cell kind',choices=cell_names)
+			if dialog1.ShowModal()==wx.ID_OK:
+				self.cell_kinds=[cell_names[i] for i in dialog1.GetSelections()]
 			else:
 				self.cell_kinds=cell_names
-			self.names_colors={}
-			self.detection_threshold={}
-			colors=[str(hex_code) for hex_code in mpl.colors.cnames.values()]
-			for color,cell_name in zip(colors,self.cell_kinds):
-				self.names_colors[cell_name]=color
-			for cell_name in self.cell_kinds:
-				dialog1=ColorPicker(self,f'{cell_name}',[cell_name,self.names_colors[cell_name]])
-				if dialog1.ShowModal()==wx.ID_OK:
-					(r,b,g,_)=dialog1.color_picker.GetColour()
-					new_color='#%02x%02x%02x'%(r,b,g)
-					self.names_colors[cell_name]=new_color
-				dialog1.Destroy()
-				dialog1=wx.MessageDialog(self,'Show the IDs for each detected cells?','Show IDs?',wx.YES_NO|wx.ICON_QUESTION)
-				if dialog1.ShowModal()==wx.ID_YES:
-					self.show_ids=True
-				else:
-					self.show_ids=False
-				dialog1.Destroy()
-				dialog1=wx.NumberEntryDialog(self,'Detection threshold for '+str(cell_name),'Enter an number between 0 and 100','Detection threshold for '+str(cell_name),0,0,100)
-				if dialog1.ShowModal()==wx.ID_OK:
-					self.detection_threshold[cell_name]=int(dialog1.GetValue())/100
-				else:
-					self.detection_threshold[cell_name]=0
-				dialog1.Destroy()
-			self.text_detection.SetLabel('Detector: '+detector+'; '+'The cell kinds / detection threshold: '+str(self.detection_threshold)+'.')
-		dialog.Destroy()
+			dialog1.Destroy()
+		else:
+			self.cell_kinds=cell_names
+		self.tracking_classes=None
+		self.tracking_max_distance=None
+		self.tracking_method='distance'
+		self.tracking_min_iou=0.1
+		self.text_tracking.SetLabel('Object ID tracking: off')
+		self.names_colors={}
+		self.detection_threshold={}
+		colors=[str(hex_code) for hex_code in mpl.colors.cnames.values()]
+		for color,cell_name in zip(colors,self.cell_kinds):
+			self.names_colors[cell_name]=color
+		for cell_name in self.cell_kinds:
+			dialog1=ColorPicker(self,f'{cell_name}',[cell_name,self.names_colors[cell_name]])
+			if dialog1.ShowModal()==wx.ID_OK:
+				(r,b,g,_)=dialog1.color_picker.GetColour()
+				new_color='#%02x%02x%02x'%(r,b,g)
+				self.names_colors[cell_name]=new_color
+			dialog1.Destroy()
+			dialog1=wx.MessageDialog(self,'Show the IDs for each detected cells?','Show IDs?',wx.YES_NO|wx.ICON_QUESTION)
+			if dialog1.ShowModal()==wx.ID_YES:
+				self.show_ids=True
+			else:
+				self.show_ids=False
+			dialog1.Destroy()
+			dialog1=wx.NumberEntryDialog(self,'Detection threshold for '+str(cell_name),'Enter an number between 0 and 100','Detection threshold for '+str(cell_name),0,0,100)
+			if dialog1.ShowModal()==wx.ID_OK:
+				self.detection_threshold[cell_name]=int(dialog1.GetValue())/100
+			else:
+				self.detection_threshold[cell_name]=0
+			dialog1.Destroy()
+		self.text_detection.SetLabel('Detector: '+detector+'; '+'The cell kinds / detection threshold: '+str(self.detection_threshold)+'.')
 
 
 	def specify_expansion(self,event):
@@ -1885,29 +2298,57 @@ class PanelLv2_AnalyzeMultiChannels(wx.Panel):
 
 	def specify_channels(self,event):
 
-		dialog=wx.NumberEntryDialog(self,'Channel for detection','Enter a number\n(the 1st channel is 0)','Channel for detection',0,0,10)
-		if dialog.ShowModal()==wx.ID_OK:
-			self.detection_channel=int(dialog.GetValue())
-		dialog.Destroy()
-
-		dialog=wx.TextEntryDialog(self,'Enter the channels for analysis\n(use "," to separate each channle)','Channels for analysis')
-		self.analysis_channels=[]
-		if dialog.ShowModal()==wx.ID_OK:
-			entry=dialog.GetValue()
+		if not self.segmentation_jobs and self.channel_color_mapping is None:
+			dialog=wx.NumberEntryDialog(self,'Channel for detection','Enter a number\n(the 1st channel is 0)','Channel for detection',0,0,10)
+			if dialog.ShowModal()==wx.ID_OK:
+				self.detection_channel=int(dialog.GetValue())
+			dialog.Destroy()
+		with wx.TextEntryDialog(self,'Enter channels for measurement (first = 0), separated by commas.\nLeave blank to measure all channels.','Channels for analysis') as dialog:
+			if dialog.ShowModal()!=wx.ID_OK:
+				return
 			try:
-				channels=entry.split(',')
-				for i in channels:
-					self.analysis_channels.append(int(i))
-			except:
-				wx.MessageBox('Please enter the number of channels for analysis in\ncorrect format! For example: 0,1,2','Error',wx.OK|wx.ICON_ERROR)
-		dialog.Destroy()
+				entry=dialog.GetValue().strip()
+				channels=[int(value.strip()) for value in entry.split(',')] if entry else []
+				if any(channel<0 for channel in channels) or len(set(channels))!=len(channels):
+					raise ValueError('Use unique nonnegative channel indices.')
+				self.analysis_channels=channels
+			except ValueError as error:
+				wx.MessageBox(str(error),'Invalid analysis channels',wx.OK|wx.ICON_ERROR)
+				return
+		detection='Detection: configured assignments' if self.segmentation_jobs else (mapping_label(self.channel_color_mapping) if self.channel_color_mapping else 'Detection channel: '+str(self.detection_channel))
+		self.text_channels.SetLabel(detection+'; analysis: '+str(self.analysis_channels or 'all'))
 
-		self.text_channels.SetLabel('Channel for detection: '+str(self.detection_channel)+'; Channels for analysis: '+str(self.analysis_channels))
+
+	def configure_multiple_detectors(self,event):
+
+		with MultiDetectorDialog(self) as dialog:
+			if dialog.ShowModal()!=wx.ID_OK:
+				return
+			jobs,sources,mode,fraction=dialog.result
+			show_ids=dialog.show_ids.GetValue()
+		self.segmentation_jobs=jobs
+		self.boundary_sources=sources
+		self.boundary_mode=mode
+		self.boundary_min_fraction=fraction
+		self.show_ids=show_ids
+		self.path_to_detector=None
+		self.channel_color_mapping=None
+		self.cell_kinds=analysis_kinds(jobs,sources)
+		all_kinds=[label for job in jobs for label in job['qualified_kinds'].values()]
+		self.names_colors={kind:PALETTE[index%len(PALETTE)] for index,kind in enumerate(all_kinds)}
+		self.detection_threshold={label:job['score_threshold'] for job in jobs for label in job['qualified_kinds'].values()}
+		self.fov_dim=next(job['inferencing_framesize'] for job in jobs if job['name'] not in sources)
+		self.tracking_classes=None
+		self.tracking_max_distance=None
+		self.text_tracking.SetLabel('Object ID tracking: off')
+		self.text_detection.SetLabel('Detectors: '+', '.join(job['name'] for job in jobs)+'; boundaries: '+str(list(sources) or 'none')+'; '+mode+'; inside fraction: '+str(fraction))
+		self.text_channels.SetLabel('Detection: configured assignments; measurements: '+str(self.analysis_channels or 'all'))
+		self.Layout()
 
 
 	def analyze_cells(self,event):
 
-		if self.path_to_files is None or self.result_path is None or self.path_to_detector is None:
+		if self.path_to_files is None or self.result_path is None or (self.path_to_detector is None and not self.segmentation_jobs):
 
 			wx.MessageBox('No input file(s) / result folder / Detector.','Error',wx.OK|wx.ICON_ERROR)
 
@@ -1918,8 +2359,12 @@ class PanelLv2_AnalyzeMultiChannels(wx.Panel):
 
 			for i in self.path_to_files:
 				AC=AnalyzeCells(i,self.result_path,self.path_to_detector,self.cell_kinds,self.names_colors,detection_threshold=self.detection_threshold,expansion=self.expansion,show_ids=self.show_ids,
-					filters=self.filters)
-				AC.analyze_multichannels(detection_channel=self.detection_channel,analysis_channels=self.analysis_channels)
+					filters=self.filters,tracking_classes=self.tracking_classes,tracking_max_distance=self.tracking_max_distance,tracking_method=self.tracking_method,tracking_min_iou=self.tracking_min_iou,segmentation_jobs=self.segmentation_jobs,boundary_sources=self.boundary_sources,boundary_mode=self.boundary_mode,boundary_min_fraction=self.boundary_min_fraction)
+				try:
+					AC.analyze_multichannels(detection_channel=self.detection_channel,analysis_channels=self.analysis_channels)
+				except (ValueError,OSError) as error:
+					wx.MessageBox(str(error),'Image analysis failed',wx.OK|wx.ICON_ERROR)
+					return
 
 				basename=os.path.splitext(os.path.basename(i))[0]
 				individual_path=os.path.join(self.result_path,basename)
@@ -1955,6 +2400,10 @@ class PanelLv2_AnalyzeSingleChannel(wx.Panel):
 		self.black_background=True
 		self.show_ids=False
 		self.filters={}
+		self.tracking_classes=None
+		self.tracking_max_distance=None
+		self.tracking_method='distance'
+		self.tracking_min_iou=0.1
 		
 		self.display_window()
 
@@ -1993,6 +2442,16 @@ class PanelLv2_AnalyzeSingleChannel(wx.Panel):
 		module_detection.Add(button_detection,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
 		module_detection.Add(self.text_detection,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
 		boxsizer.Add(module_detection,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
+		boxsizer.Add(0,5,0)
+
+		module_tracking=wx.BoxSizer(wx.HORIZONTAL)
+		button_tracking=wx.Button(panel,label='Match IDs between object types',size=(300,40))
+		button_tracking.Bind(wx.EVT_BUTTON,lambda event:configure_object_tracking(self))
+		wx.Button.SetToolTip(button_tracking,'Associate two object types by centroid distance or mask IoU, one-to-one across the image. Set a maximum distance or minimum IoU ratio. Matched objects share an ID; unmatched objects of those types are discarded.')
+		self.text_tracking=wx.StaticText(panel,label='Object ID tracking: off',style=wx.ALIGN_LEFT|wx.ST_ELLIPSIZE_END)
+		module_tracking.Add(button_tracking,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
+		module_tracking.Add(self.text_tracking,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
+		boxsizer.Add(module_tracking,0,wx.LEFT|wx.RIGHT|wx.EXPAND,10)
 		boxsizer.Add(0,5,0)
 
 		module_filters=wx.BoxSizer(wx.HORIZONTAL)
@@ -2091,6 +2550,11 @@ class PanelLv2_AnalyzeSingleChannel(wx.Panel):
 				dialog1.Destroy()
 			else:
 				self.cell_kinds=cell_names
+			self.tracking_classes=None
+			self.tracking_max_distance=None
+			self.tracking_method='distance'
+			self.tracking_min_iou=0.1
+			self.text_tracking.SetLabel('Object ID tracking: off')
 			self.names_colors={}
 			self.detection_threshold={}
 			colors=[str(hex_code) for hex_code in mpl.colors.cnames.values()]
@@ -2176,20 +2640,24 @@ class PanelLv2_AnalyzeSingleChannel(wx.Panel):
 
 			for i in self.path_to_files:
 				AC=AnalyzeCells(i,self.result_path,self.path_to_detector,self.cell_kinds,self.names_colors,detection_threshold=self.detection_threshold,expansion=self.expansion,show_ids=self.show_ids,
-					filters=self.filters)
-				AC.analyze_singlechannel()
+					filters=self.filters,tracking_classes=self.tracking_classes,tracking_max_distance=self.tracking_max_distance,tracking_method=self.tracking_method,tracking_min_iou=self.tracking_min_iou)
+				try:
+					AC.analyze_singlechannel()
+				except (ValueError,OSError) as error:
+					wx.MessageBox(str(error),'Image analysis failed',wx.OK|wx.ICON_ERROR)
+					return
 
 				basename=os.path.splitext(os.path.basename(i))[0]
 				individual_path=os.path.join(self.result_path,basename)
 
 				for cell_name in self.cell_kinds:
-					individual_summary=os.path.join(individual_path,basename+'_'+cell_name+'_summary.xlsx')
-					individual_arearatio=os.path.join(individual_path,basename+'_'+cell_name+'_arearatio.xlsx')
+					individual_summary=os.path.join(individual_path,basename+'_summary.xlsx')
+					individual_arearatio=os.path.join(individual_path,basename+'_arearatio.xlsx')
 					if os.path.exists(individual_summary):
-						all_summary.append(pd.read_excel(individual_summary))
+						all_summary.append(pd.read_excel(individual_summary,sheet_name=cell_name))
 						names_summary.append(basename+'_'+cell_name)
 					if os.path.exists(individual_arearatio):
-						all_arearatios.append(pd.read_excel(individual_arearatio))
+						all_arearatios.append(pd.read_excel(individual_arearatio,sheet_name=cell_name))
 						names_arearatios.append(basename+'_'+cell_name)
 
 			if len(all_summary)>=1:
