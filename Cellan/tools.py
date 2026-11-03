@@ -8,7 +8,11 @@ from skimage import exposure
 
 
 
-def extract_images(path_to_file,out_folder,fov_dim,black_background=True):
+def extract_images(path_to_file,out_folder,fov_dim,black_background=True,channel_color_mapping=None):
+
+	if channel_color_mapping is not None:
+		from .channels import extract_composites
+		return extract_composites(path_to_file,out_folder,fov_dim,channel_color_mapping,black_background)
 
 	if os.path.splitext(os.path.basename(path_to_file))[1] in ['.svs','.SVS']:
 
