@@ -1,3 +1,6 @@
+from .segmentation import prepare_segmentation_jobs, validate_boundary_options, analysis_kinds, filter_inside_boundaries, clear_previous_assignment_outputs, PALETTE
+from .tracking import assign_cell_ids, validate_tracking, validate_tracking_method
+from .channels import read_channels, validate_channel_indices, validate_mapping, detection_tile
 from .detector import Detector
 import os
 import cv2
@@ -15,421 +18,415 @@ from skimage import exposure
 
 class AnalyzeCells():
 
-	def __init__(self,path_to_file,results_path,path_to_detector,cell_kinds,names_colors,detection_threshold=None,expansion=None,show_ids=False,filters={}):
+	def __init__(self,path_to_file,results_path,path_to_detector=None,cell_kinds=None,names_colors=None,detection_threshold=None,expansion=None,show_ids=False,filters=None,tracking_classes=None,tracking_max_distance=None,tracking_method='distance',tracking_min_iou=0.1,segmentation_jobs=None,boundary_sources=None,boundary_mode='all',boundary_min_fraction=1.0):
 
 		self.path_to_file=path_to_file
-		self.results_path=os.path.join(results_path,os.path.splitext(os.path.basename(self.path_to_file))[0])
-		if os.path.splitext(os.path.basename(self.path_to_file))[1] in ['.lif','.LIF']:
-			self.lif=True
-		else: 
-			self.lif=False
+		self.results_path=os.path.join(results_path,os.path.splitext(os.path.basename(path_to_file))[0])
+		self.lif=os.path.splitext(path_to_file)[1].lower()=='.lif'
 		os.makedirs(self.results_path,exist_ok=True)
-		self.detector=Detector()
-		self.detector.load(path_to_detector,cell_kinds)
-		self.cell_kinds=cell_kinds
-		self.cell_mapping=self.detector.cell_mapping
-		self.names_colors=names_colors
-		self.detection_threshold=detection_threshold
-		if self.detection_threshold is None:
-			self.detection_threshold={}
-			for cell_name in self.cell_kinds:
-				self.detection_threshold[cell_name]=0
-		self.expansion=expansion
-		self.fov_dim=self.detector.inferencing_framesize
-		self.black_background=self.detector.black_background
-		self.show_ids=show_ids
-		self.filters=filters
-
-
-	def analyze_multichannels(self,detection_channel=0,analysis_channels=[],downsize_factor=None):
-
-		if self.lif:
-			lifdata=LifFile(self.path_to_file)
-			file=[i for i in lifdata.get_iter_image()][0]
-			detect_image=np.array(file.get_frame(z=0,t=0,c=detection_channel))
-			if len(analysis_channels)==0:
-				c_list=[i for i in file.get_iter_c(t=0,z=0)]
-				analysis_channels=list(range(len(c_list)))
+		self.segmentation_jobs=None
+		self.boundary_sources=()
+		self.boundary_mode=boundary_mode
+		self.boundary_min_fraction=boundary_min_fraction
+		self.boundary_detections=[]
+		self.boundary_audit=[]
+		if segmentation_jobs is not None:
+			self.segmentation_jobs=prepare_segmentation_jobs(segmentation_jobs)
+			self.boundary_sources,self.boundary_mode,self.boundary_min_fraction=validate_boundary_options(
+				boundary_sources,self.segmentation_jobs,boundary_mode,boundary_min_fraction)
+			available=analysis_kinds(self.segmentation_jobs,self.boundary_sources)
+			self.cell_kinds=list(cell_kinds) if cell_kinds else available
+			if any(kind not in available for kind in self.cell_kinds):
+				raise ValueError('Analysis object types must belong to non-boundary Detector assignments.')
+			all_kinds=[label for job in self.segmentation_jobs for label in job['qualified_kinds'].values()]
+			self.names_colors={kind:PALETTE[index%len(PALETTE)] for index,kind in enumerate(all_kinds)}
+			if names_colors:
+				self.names_colors.update(names_colors)
+			self.detection_threshold={label:job['score_threshold'] for job in self.segmentation_jobs for label in job['qualified_kinds'].values()}
+			if detection_threshold:
+				self.detection_threshold.update(detection_threshold)
+			first=next(job for job in self.segmentation_jobs if job['name'] not in self.boundary_sources)
+			self.fov_dim=first['inferencing_framesize']
+			self.black_background=first['black_background']
+			self.detector=None
+			self.cell_mapping={}
 		else:
-			if os.path.splitext(os.path.basename(self.path_to_file))[1] in ['.qptiff','.QPTIFF']:
-				detect_image=imread(self.path_to_file)[detection_channel,:,:]
-				if len(analysis_channels)==0:
-					analysis_channels=list(range(imread(self.path_to_file).shape[0]))
-			else:
-				detect_image=imread(self.path_to_file)[:,:,detection_channel]
-				if len(analysis_channels)==0:
-					analysis_channels=list(range(imread(self.path_to_file).shape[2]))
+			if boundary_sources:
+				raise ValueError('Boundary channels require Detector/channel assignments.')
+			self.cell_kinds=list(cell_kinds or [])
+			if path_to_detector is None:
+				raise ValueError('Select a Detector or configure Detector/channel assignments.')
+			self.detector=Detector()
+			self.detector.load(path_to_detector,self.cell_kinds)
+			self.cell_mapping=self.detector.cell_mapping
+			self.names_colors=names_colors
+			self.detection_threshold=detection_threshold if detection_threshold is not None else {kind:0 for kind in self.cell_kinds}
+			self.fov_dim=self.detector.inferencing_framesize
+			self.black_background=self.detector.black_background
+		self.tracking_classes,self.tracking_max_distance=validate_tracking(tracking_classes,self.cell_kinds,tracking_max_distance)
+		self.tracking_method,self.tracking_min_iou=validate_tracking_method(tracking_method,tracking_min_iou)
+		self.expansion=expansion
+		self.show_ids=show_ids
+		self.filters=filters or {}
+		self.detections=[]
+		self.tracking_matches=[]
 
-		cell_numbers={}
-		cell_centers={}
-		cell_areas={}
-		cell_intensities={}
 
-		for cell_name in self.cell_kinds:
-			cell_numbers[cell_name]=0
-			cell_centers[cell_name]=[]
-			cell_areas[cell_name]=[]
-			cell_intensities[cell_name]={}
-			for c in analysis_channels:
-				cell_intensities[cell_name][c]=[]
+	def _prepare_tile_detections(self,masks,classes,scores,valid_shape,offset,apply_filters=False,selected_kinds=None,preserve_raw=False,process_masks=True):
 
-		detect_image=cv2.cvtColor(np.uint8(detect_image),cv2.COLOR_GRAY2BGR)
+		"""Filter masks and preserve original geometry before optional expansion."""
+		height,width=valid_shape
+		x0,y0=offset
+		records=[]
+		for kind in (self.cell_kinds if selected_kinds is None else selected_kinds):
+			cell_masks=[]
+			for mask,label,score in zip(masks,classes,scores):
+				if label!=kind or score<self.detection_threshold.get(kind,0):
+					continue
+				mask=(mask!=0).astype(np.uint8)
+				mask[height:,:]=0
+				mask[:,width:]=0
+				if mask.any():
+					cell_masks.append(mask)
+			if not cell_masks:
+				continue
+			# Remove smaller masks largely contained in another mask of this type.
+			areas=np.sum(cell_masks,axis=(1,2))
+			overlaps=np.sum(np.logical_and(np.array(cell_masks)[:,None],cell_masks),axis=(2,3))
+			excluded=np.any((overlaps/areas[:,None]>0.8)&(areas[:,None]<areas[None,:]),axis=1)
+			for mask,exclude in zip(cell_masks,excluded):
+				if exclude:
+					continue
+				y_pixels,x_pixels=np.nonzero(mask)
+				centroid=(float(x_pixels.mean())+x0,float(y_pixels.mean())+y0)
+				tracking_data={}
+				if preserve_raw or (self.tracking_classes is not None and self.tracking_method=='iou' and kind in self.tracking_classes):
+					left,top,right,bottom=int(x_pixels.min()),int(y_pixels.min()),int(x_pixels.max())+1,int(y_pixels.max())+1
+					tracking_data={'tracking_mask':mask[top:bottom,left:right].astype(bool,copy=True),'mask_origin':(x0+left,y0+top)}
+				if process_masks:
+					mask=cv2.morphologyEx(mask,cv2.MORPH_CLOSE,np.ones((5,5),np.uint8))
+					if self.expansion is not None:
+						mask=cv2.dilate(mask,np.ones((5,5),np.uint8),iterations=self.expansion)
+				mask[height:,:]=0
+				mask[:,width:]=0
+				contours,_=cv2.findContours(mask*255,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_NONE)
+				if not contours:
+					continue
+				contour=max(contours,key=cv2.contourArea)
+				area=int(mask.sum())
+				perimeter=float(cv2.arcLength(contour,closed=True))
+				(_,_),(wd,ht),_=cv2.minAreaRect(contour)
+				metrics={'area':area,'perimeter':perimeter,'height':ht,'width':wd,
+					'roundness':4*np.pi*area/(perimeter*perimeter) if perimeter>0 else 0.0}
+				if apply_filters and any(not self.filters[key][0]<=value<=self.filters[key][1]
+					for key,value in metrics.items() if key in self.filters):
+					continue
+				records.append({'kind':kind,'centroid':centroid,'center':tuple(int(value) for value in centroid),
+					'contour':contour+np.array([[[x0,y0]]]),'mask':mask,'metrics':metrics,
+					'tile':(x0,y0,x0+width,y0+height),**tracking_data})
+		return records
+
+
+	def _assign_ids(self,records):
+
+		# Match over the whole image, not separately within each inference tile.
+		self.detections,self.tracking_matches=assign_cell_ids(records,self.tracking_classes,self.tracking_max_distance,
+			method=self.tracking_method,min_iou=self.tracking_min_iou)
+		match_path=os.path.join(self.results_path,'cell_matches.csv')
+		if self.tracking_classes is not None:
+			columns=['cell_id','reference_class','reference_detection_id','reference_center_x','reference_center_y',
+				'target_class','target_detection_id','target_center_x','target_center_y','centroid_distance','tracking_method','mask_iou']
+			pd.DataFrame(self.tracking_matches,columns=columns).to_csv(match_path,index=False)
+			print('Matched '+str(len(self.tracking_matches))+' cell pairs; discarded '+str(len(records)-len(self.detections))+' unmatched detections.')
+		elif os.path.isfile(match_path):
+			os.remove(match_path)
+		return self.detections
+
+
+	def _draw_detection(self,image,record,thickness,offset=(0,0)):
+
+		hex_color=self.names_colors[record['kind']].lstrip('#')
+		color=tuple(int(hex_color[i:i+2],16) for i in (4,2,0))
+		x0,y0=offset
+		contour=record['contour']-np.array([[[x0,y0]]])
+		cv2.drawContours(image,[contour],0,color,thickness)
+		if self.show_ids:
+			center=(record['center'][0]-x0,record['center'][1]-y0)
+			cv2.putText(image,str(record['cell_id']),center,cv2.FONT_HERSHEY_SIMPLEX,thickness,color,thickness)
+
+
+	def analyze_multichannels(self,detection_channel=0,analysis_channels=None,downsize_factor=None):
+
+		"""Segment saved composites or a single channel, then optionally match IDs.
+
+		Detector.load() reads channel_color_mapping from model_parameters.txt.
+		When present, that mapping selects all detection channels and RGB LUTs;
+		detection_channel is used only by detectors without a saved mapping.
+		Tracking uses original mask centroids or pixel IoU over the entire image.
+		Measurement channels retain their original, uncolorized intensities.
+		"""
+		if self.segmentation_jobs is not None:
+			return self._analyze_multiple_detectors(analysis_channels,downsize_factor)
+		channels=read_channels(self.path_to_file)
+		mapping=getattr(self.detector,'channel_color_mapping',None)
+		if mapping is not None:
+			mapping=validate_mapping(mapping)
+			detection_channels=[entry['index'] for entry in mapping['channels']]
+			print('Reconstructing detection image from saved channel-color mapping: '+str(mapping['channels']))
+		else:
+			detection_channels=[detection_channel]
+			print('Reconstructing detection image from single channel: '+str(detection_channel))
+		analysis_channels=list(analysis_channels) if analysis_channels else list(range(channels.shape[0]))
+		validate_channel_indices(channels,analysis_channels)
+		validate_channel_indices(channels,detection_channels)
 		if downsize_factor:
-			detect_image=cv2.resize(detect_image,(int(detect_image.shape[1]*downsize_factor/100),int(detect_image.shape[0]*downsize_factor/100)),interpolation=cv2.INTER_AREA)
-		width=detect_image.shape[1]
-		height=detect_image.shape[0]
-		num_w=int(width/self.fov_dim)
-		if width%self.fov_dim!=0:
-			num_w+=1
-		num_h=int(height/self.fov_dim)
-		if height%self.fov_dim!=0:
-			num_h+=1
-
-		thickness=max(1,round(self.fov_dim/960))
-
-		for h in range(num_h):
-
-			for w in range(num_w):
-
-				detect_fov=np.uint8(exposure.rescale_intensity(detect_image[int(h*self.fov_dim):min(int((h+1)*self.fov_dim),height),int(w*self.fov_dim):min(int((w+1)*self.fov_dim),width)],out_range=(0,255)))
-				if detect_fov.shape[0]<self.fov_dim or detect_fov.shape[1]<self.fov_dim:
-					if self.black_background:
-						background=np.zeros((self.fov_dim,self.fov_dim,3),dtype='uint8')
-					else:
-						background=np.uint8(np.ones((self.fov_dim,self.fov_dim,3),dtype='uint8')*255)
-					background[:detect_fov.shape[0],:detect_fov.shape[1]]=detect_fov
-					detect_fov=background
-
-				analysis_fovs={}
-				to_annotates={}
-				for c in analysis_channels:
-					if self.lif:
-						analysis_image=np.array(file.get_frame(z=0,t=0,c=c))
-						if downsize_factor:
-							analysis_image=cv2.resize(analysis_image,(int(analysis_image.shape[1]*downsize_factor/100),int(analysis_image.shape[0]*downsize_factor/100)),interpolation=cv2.INTER_AREA)
-						analysis_fov=analysis_image[int(h*self.fov_dim):min(int((h+1)*self.fov_dim),height),int(w*self.fov_dim):min(int((w+1)*self.fov_dim),width)]
-					else:
-						analysis_image=imread(self.path_to_file)
-						if downsize_factor:
-							analysis_image=cv2.resize(analysis_image,(int(analysis_image.shape[1]*downsize_factor/100),int(analysis_image.shape[0]*downsize_factor/100)),interpolation=cv2.INTER_AREA)
-						if os.path.splitext(os.path.basename(self.path_to_file))[1] in ['.qptiff','.QPTIFF']:
-							analysis_fov=analysis_image[c,int(h*self.fov_dim):min(int((h+1)*self.fov_dim),height),int(w*self.fov_dim):min(int((w+1)*self.fov_dim),width)]
-						else:
-							analysis_fov=analysis_image[int(h*self.fov_dim):min(int((h+1)*self.fov_dim),height),int(w*self.fov_dim):min(int((w+1)*self.fov_dim),width),c]						
-					if analysis_fov.shape[0]<self.fov_dim or analysis_fov.shape[1]<self.fov_dim:
-						if self.black_background:
-							background=np.zeros((self.fov_dim,self.fov_dim),dtype='uint8')
-						else:
-							background=np.uint8(np.ones((self.fov_dim,self.fov_dim),dtype='uint8')*255)
-						background[:analysis_fov.shape[0],:analysis_fov.shape[1]]=analysis_fov
-						analysis_fov=background
-					analysis_fovs[c]=analysis_fov
-					to_annotates[c]=cv2.cvtColor(np.uint8(exposure.rescale_intensity(analysis_fov,out_range=(0,255))),cv2.COLOR_GRAY2BGR)
-
+			if downsize_factor<=0:
+				raise ValueError('Downsize factor must be positive.')
+			new_size=(max(1,int(channels.shape[2]*downsize_factor/100)),max(1,int(channels.shape[1]*downsize_factor/100)))
+			channels=np.stack([cv2.resize(plane,new_size,interpolation=cv2.INTER_AREA) for plane in channels])
+		if mapping is None:
+			detect_image=cv2.cvtColor(np.uint8(channels[detection_channel]),cv2.COLOR_GRAY2BGR)
+		height,width=channels.shape[1:]
+		records=[]
+		tiles=[]
+		stem=os.path.splitext(os.path.basename(self.path_to_file))[0]
+		for y0 in range(0,height,self.fov_dim):
+			for x0 in range(0,width,self.fov_dim):
+				y1,x1=min(y0+self.fov_dim,height),min(x0+self.fov_dim,width)
+				tiles.append((x0,y0,x1,y1))
+				if mapping is not None:
+					# Same LUT overlay, normalization, padding and BGR order as training.
+					detect_fov=detection_tile(channels[:,y0:y1,x0:x1],mapping,self.fov_dim,self.black_background,bgr=True)
+				else:
+					fov=np.uint8(exposure.rescale_intensity(detect_image[y0:y1,x0:x1],out_range=(0,255)))
+					detect_fov=np.full((self.fov_dim,self.fov_dim,3),0 if self.black_background else 255,dtype=np.uint8)
+					detect_fov[:y1-y0,:x1-x0]=fov
 				output=self.detector.inference([{'image':torch.as_tensor(detect_fov.astype('float32').transpose(2,0,1))}])
 				instances=output[0]['instances'].to('cpu')
 				masks=instances.pred_masks.numpy().astype(np.uint8)
-				classes=instances.pred_classes.numpy()
-				classes=[self.cell_mapping[str(x)] for x in classes]
-				scores=instances.scores.numpy()
+				classes=[self.cell_mapping[str(value)] for value in instances.pred_classes.numpy()]
+				tile_records=self._prepare_tile_detections(masks,classes,instances.scores.numpy(),(y1-y0,x1-x0),(x0,y0),apply_filters=True)
+				for record in tile_records:
+					mask=record.pop('mask')[:y1-y0,:x1-x0].astype(bool)
+					record['intensities']={c:float(np.sum(channels[c,y0:y1,x0:x1],dtype=np.float64,where=mask)/record['metrics']['area']) for c in analysis_channels}
+				records.extend(tile_records)
 
-				if len(masks)>0:
+		records=self._assign_ids(records)
+		by_tile={tile:[] for tile in tiles}
+		for record in records:
+			by_tile[record['tile']].append(record)
+		thickness=max(1,round(self.fov_dim/960))
+		# Render only after matching, so discarded masks never appear in annotations.
+		for tile in tiles:
+			x0,y0,x1,y1=tile
+			for c in analysis_channels:
+				fov=np.zeros((self.fov_dim,self.fov_dim),dtype=channels.dtype)
+				fov[:y1-y0,:x1-x0]=channels[c,y0:y1,x0:x1]
+				annotated=cv2.cvtColor(np.uint8(exposure.rescale_intensity(fov,out_range=(0,255))),cv2.COLOR_GRAY2BGR)
+				for record in by_tile[tile]:
+					self._draw_detection(annotated,record,thickness,(x0,y0))
+				filename=stem+'_'+str(x0//self.fov_dim)+str(y0//self.fov_dim)+'_c'+str(c)+'_annotated.jpg'
+				cv2.imwrite(os.path.join(self.results_path,filename),annotated)
 
-					for cell_name in self.cell_kinds:
-
-						hex_color=self.names_colors[cell_name].lstrip('#')
-						color=tuple(int(hex_color[i:i+2],16) for i in (0,2,4))
-						color=color[::-1]
-
-						cell_masks=[masks[a] for a,name in enumerate(classes) if name==cell_name]
-						cell_scores=[scores[a] for a,name in enumerate(classes) if name==cell_name]
-
-						if len(cell_masks)>0:
-
-							mask_area=np.sum(np.array(cell_masks),axis=(1,2))
-							exclusion_mask=np.zeros(len(cell_masks),dtype=bool)
-							exclusion_mask[np.where((np.sum(np.logical_and(np.array(cell_masks)[:,None],cell_masks),axis=(2,3))/mask_area[:,None]>0.8) & (mask_area[:,None]<mask_area[None,:]))[0]]=True
-							cell_masks=[m for m,exclude in zip(cell_masks,exclusion_mask) if not exclude]
-							cell_scores=[s for s,exclude in zip(cell_scores,exclusion_mask) if not exclude]
-
-							if len(cell_masks)>0:
-
-									goodmasks=[cell_masks[x] for x,score in enumerate(cell_scores) if score>=self.detection_threshold[cell_name]]
-									goodcontours=[]
-
-									if len(goodmasks)>0:
-
-										cell_numbers[cell_name]+=len(goodmasks)
-
-										for mask in goodmasks:
-											mask=cv2.morphologyEx(mask,cv2.MORPH_CLOSE,np.ones((5,5),np.uint8))
-											if self.expansion is not None:
-												mask=cv2.dilate(mask,np.ones((5,5),np.uint8),iterations=self.expansion)
-											cnts,_=cv2.findContours((mask*255).astype(np.uint8),cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_NONE)
-											cnt=sorted(cnts,key=cv2.contourArea,reverse=True)[0]
-											goodcontours.append(cnt)
-											cx=int(cv2.moments(cnt)['m10']/cv2.moments(cnt)['m00'])+int(w*self.fov_dim)
-											cy=int(cv2.moments(cnt)['m01']/cv2.moments(cnt)['m00'])+int(h*self.fov_dim)
-											cell_centers[cell_name].append((cx,cy))
-											cell_areas[cell_name].append(np.sum(np.array(mask),axis=(0,1)))
-
-										for c in analysis_channels:
-											analysis_fov=analysis_fovs[c]
-											to_annotate=to_annotates[c]
-											for n,cnt in enumerate(goodcontours):
-												area=cell_areas[cell_name][n]
-												if area>0:
-													cell_intensities[cell_name][c].append(np.sum(analysis_fov*goodmasks[n])/area)
-													cv2.drawContours(to_annotate,[cnt],0,color,thickness)
-													if self.show_ids:
-														cx-=int(w*self.fov_dim)
-														cy-=int(h*self.fov_dim)
-														cv2.putText(to_annotate,str(len(cell_intensities[cell_name][c])),(cx,cy),cv2.FONT_HERSHEY_SIMPLEX,thickness,color,thickness)
-													to_annotates[c]=to_annotate
-												else:
-													cell_intensities[cell_name][c].append(0)
-
-					for c in analysis_channels:
-						cv2.imwrite(os.path.join(self.results_path,os.path.splitext(os.path.basename(self.path_to_file))[0]+'_'+str(w)+str(h)+'_c'+str(c)+'_annotated.jpg'),to_annotates[c])
-
-		for cell_name in self.cell_kinds:
-
-			dfs=[]
-
-			if len(cell_centers[cell_name])>0:
-				dfs.append(pd.DataFrame([i+1 for i in range(len(cell_centers[cell_name]))],columns=['number']).reset_index(drop=True))
-				dfs.append(pd.DataFrame(cell_centers[cell_name],columns=['center_x','center_y']).reset_index(drop=True))
-				dfs.append(pd.DataFrame(cell_areas[cell_name],columns=['areas']).reset_index(drop=True))
-				for c in analysis_channels:
-					dfs.append(pd.DataFrame(cell_intensities[cell_name][c],columns=['intensity_'+str(c)]).reset_index(drop=True))
-			else:
-				dfs.append(pd.DataFrame(['NA'],columns=['number']).reset_index(drop=True))
-				dfs.append(pd.DataFrame([('NA','NA')],columns=['center_x','center_y']).reset_index(drop=True))
-				dfs.append(pd.DataFrame(['NA'],columns=['areas']).reset_index(drop=True))
-				for c in analysis_channels:
-					dfs.append(pd.DataFrame(['NA'],columns=['intensity_'+str(c)]).reset_index(drop=True))
-			out_sheet=os.path.join(self.results_path,os.path.splitext(os.path.basename(self.path_to_file))[0]+'_'+cell_name+'_summary.xlsx')
-			pd.concat(dfs,axis=1).to_excel(out_sheet,float_format='%.2f',index_label='ID/parameter')
-
+		for kind in self.cell_kinds:
+			rows=[]
+			for record in sorted((record for record in records if record['kind']==kind),key=lambda record:record['cell_id']):
+				rows.append([record['cell_id'],*record['center'],record['metrics']['area']]+[record['intensities'][c] for c in analysis_channels])
+			columns=['number','center_x','center_y','areas']+['intensity_'+str(c) for c in analysis_channels]
+			pd.DataFrame(rows,columns=columns).to_excel(os.path.join(self.results_path,stem+'_'+kind+'_summary.xlsx'),float_format='%.2f',index_label='ID/parameter')
 		print('Analysis completed!')
+
+
+	def _analyze_multiple_detectors(self,analysis_channels=None,downsize_factor=None):
+
+		channels=read_channels(self.path_to_file)
+		analysis_channels=list(analysis_channels) if analysis_channels else list(range(channels.shape[0]))
+		validate_channel_indices(channels,analysis_channels)
+		# Check every source before loading any model or writing result tables.
+		for job in self.segmentation_jobs:
+			mapping=job['channel_color_mapping']
+			validate_channel_indices(channels,[entry['index'] for entry in mapping['channels']] if mapping is not None else [job['detection_channel']])
+		if downsize_factor:
+			if downsize_factor<=0:
+				raise ValueError('Downsize factor must be positive.')
+			size=(max(1,int(channels.shape[2]*downsize_factor/100)),max(1,int(channels.shape[1]*downsize_factor/100)))
+			channels=np.stack([cv2.resize(plane,size,interpolation=cv2.INTER_AREA) for plane in channels])
+		height,width=channels.shape[1:]
+		records=[]
+		boundaries=[]
+		for job in self.segmentation_jobs:
+			print('Segmenting assignment '+job['name']+' using '+job['path_to_detector'])
+			detector=Detector()
+			detector.load(job['path_to_detector'],job['cell_kinds'])
+			frame=detector.inferencing_framesize
+			# Assignment remapping changes only source indices, preserving trained LUTs.
+			mapping=job['channel_color_mapping']
+			is_boundary=job['name'] in self.boundary_sources
+			selected=list(job['qualified_kinds'].values())
+			if not is_boundary:
+				selected=[kind for kind in selected if kind in self.cell_kinds]
+			parent_count=0
+			for y0 in range(0,height,frame):
+				for x0 in range(0,width,frame):
+					y1,x1=min(y0+frame,height),min(x0+frame,width)
+					if mapping is not None:
+						detect_fov=detection_tile(channels[:,y0:y1,x0:x1],mapping,frame,detector.black_background,bgr=True)
+					else:
+						plane=channels[job['detection_channel'],y0:y1,x0:x1]
+						fov=cv2.cvtColor(np.uint8(exposure.rescale_intensity(plane,out_range=(0,255))),cv2.COLOR_GRAY2BGR)
+						detect_fov=np.full((frame,frame,3),0 if detector.black_background else 255,dtype=np.uint8)
+						detect_fov[:y1-y0,:x1-x0]=fov
+					output=detector.inference([{'image':torch.as_tensor(detect_fov.astype('float32').transpose(2,0,1))}])
+					instances=output[0]['instances'].to('cpu')
+					masks=instances.pred_masks.numpy().astype(np.uint8)
+					classes=[job['qualified_kinds'].get(detector.cell_mapping[str(value)]) for value in instances.pred_classes.numpy()]
+					tile_records=self._prepare_tile_detections(masks,classes,instances.scores.numpy(),(y1-y0,x1-x0),(x0,y0),
+						apply_filters=not is_boundary,selected_kinds=selected,preserve_raw=True,process_masks=not is_boundary)
+					for record in tile_records:
+						record['source']=job['name']
+						mask=record.pop('mask')[:y1-y0,:x1-x0].astype(bool)
+						if is_boundary:
+							parent_count+=1
+							record['boundary_id']=parent_count
+							boundaries.append(record)
+						else:
+							# Containment tests the actual quantified region, including expansion.
+							y_pixels,x_pixels=np.nonzero(mask)
+							left,top,right,bottom=int(x_pixels.min()),int(y_pixels.min()),int(x_pixels.max())+1,int(y_pixels.max())+1
+							record['quant_mask']=mask[top:bottom,left:right].copy()
+							record['quant_origin']=(x0+left,y0+top)
+							record['candidate_id']=len(records)+1
+							record['intensities']={c:float(np.sum(channels[c,y0:y1,x0:x1],dtype=np.float64,where=mask)/record['metrics']['area']) for c in analysis_channels}
+							records.append(record)
+			# Only one assignment's model is kept resident at a time.
+			del detector
+
+		self.boundary_detections=boundaries
+		records,self.boundary_audit=filter_inside_boundaries(records,boundaries,self.boundary_sources,self.boundary_mode,self.boundary_min_fraction)
+		records=self._assign_ids(records)
+		retained_ids={record['candidate_id']:record['cell_id'] for record in records}
+		for row in self.boundary_audit:
+			row['quantified']=row['candidate_id'] in retained_ids
+			row['cell_id']=retained_ids.get(row['candidate_id'])
+		stem=os.path.splitext(os.path.basename(self.path_to_file))[0]
+		clear_previous_assignment_outputs(self.results_path,stem)
+		audit_path=os.path.join(self.results_path,'boundary_filter.csv')
+		if self.boundary_sources:
+			columns=['candidate_id','analysis_source','analysis_kind','boundary_source','boundary_mask_id','inside_fraction',
+				'passes_boundary','passes_boundary_rule','quantified','cell_id']
+			pd.DataFrame(self.boundary_audit,columns=columns).to_csv(audit_path,index=False)
+		elif os.path.isfile(audit_path):
+			os.remove(audit_path)
+		with open(os.path.join(self.results_path,'segmentation_assignments.json'),'w',encoding='utf-8') as stream:
+			json.dump({'assignments':self.segmentation_jobs,'boundary_sources':self.boundary_sources,
+				'boundary_mode':self.boundary_mode,'boundary_min_fraction':self.boundary_min_fraction,
+				'measurement_channels':analysis_channels,'downsize_factor':downsize_factor},stream,indent=2)
+		for kind in self.cell_kinds:
+			rows=[]
+			for record in sorted((record for record in records if record['kind']==kind),key=lambda record:record['cell_id']):
+				rows.append([record['cell_id'],*record['center'],record['metrics']['area']]+[record['intensities'][c] for c in analysis_channels])
+			columns=['number','center_x','center_y','areas']+['intensity_'+str(c) for c in analysis_channels]
+			pd.DataFrame(rows,columns=columns).to_excel(os.path.join(self.results_path,stem+'_'+kind+'_summary.xlsx'),float_format='%.2f',index_label='ID/parameter')
+
+		# Render all sources on a common output grid despite different model frames.
+		by_tile={(x,y):[] for y in range(0,height,self.fov_dim) for x in range(0,width,self.fov_dim)}
+		outlines=list(records)+[dict(record,cell_id='B'+str(record['boundary_id'])) for record in boundaries]
+		for record in outlines:
+			points=record['contour'].reshape(-1,2)
+			left,top=points.min(axis=0)
+			right,bottom=points.max(axis=0)
+			for y in range(max(0,int(top)//self.fov_dim)*self.fov_dim,min(height,int(bottom)+1),self.fov_dim):
+				for x in range(max(0,int(left)//self.fov_dim)*self.fov_dim,min(width,int(right)+1),self.fov_dim):
+					by_tile[x,y].append(record)
+		thickness=max(1,round(self.fov_dim/960))
+		for (x0,y0),tile_records in by_tile.items():
+			y1,x1=min(y0+self.fov_dim,height),min(x0+self.fov_dim,width)
+			for c in analysis_channels:
+				plane=np.zeros((self.fov_dim,self.fov_dim),dtype=channels.dtype)
+				plane[:y1-y0,:x1-x0]=channels[c,y0:y1,x0:x1]
+				annotated=cv2.cvtColor(np.uint8(exposure.rescale_intensity(plane,out_range=(0,255))),cv2.COLOR_GRAY2BGR)
+				for record in tile_records:
+					self._draw_detection(annotated,record,thickness,(x0,y0))
+				filename=stem+'_x'+str(x0)+'_y'+str(y0)+'_c'+str(c)+'_annotated.jpg'
+				cv2.imwrite(os.path.join(self.results_path,filename),annotated)
+		print('Analysis completed with '+str(len(records))+' quantified objects.')
 
 
 	def analyze_singlechannel(self):
 
-		data={}
-		annotation={'segmentations':[],'class_names':[]}
-		total_foreground_area=0
-		parameters=['center','area','height','width','perimeter','roundness','intensity']
-
-		for cell_name in self.cell_kinds:
-			data[cell_name]={}
-			data[cell_name]['total_cell_area']=0
-			for parameter in parameters:
-				data[cell_name][parameter]=[]
+		if self.segmentation_jobs is not None:
+			raise ValueError('Use Analyze Multichannel Images for multiple Detector assignments.')
 
 		image_name=os.path.basename(self.path_to_file)
-		if os.path.splitext(image_name)[1] in ['.jpg','.JPG','.png','.PNG']:
+		stem=os.path.splitext(image_name)[0]
+		if os.path.splitext(image_name)[1].lower() in ['.jpg','.png']:
 			image=cv2.imread(self.path_to_file)
 		else:
 			image=imread(self.path_to_file)
-			image=cv2.cvtColor(image,cv2.COLOR_RGB2BGR)
-		image_name=os.path.basename(self.path_to_file)
-		width=image.shape[1]
-		height=image.shape[0]
-		num_w=int(width/self.fov_dim)
-		if width%self.fov_dim!=0:
-			num_w+=1
-		num_h=int(height/self.fov_dim)
-		if height%self.fov_dim!=0:
-			num_h+=1
-
-		to_annotate=np.uint8(exposure.rescale_intensity(image,out_range=(0,255)))
-		thickness=max(1,round(self.fov_dim/960))
-
-		for h in range(num_h):
-
-			for w in range(num_w):
-
-				offset=np.array([[[int(w*self.fov_dim),int(h*self.fov_dim)]]])
-
-				analysis_fov=image[int(h*self.fov_dim):min(int((h+1)*self.fov_dim),height),int(w*self.fov_dim):min(int((w+1)*self.fov_dim),width)]
-				detect_fov=np.uint8(exposure.rescale_intensity(analysis_fov,out_range=(0,255)))
-				if detect_fov.shape[0]<self.fov_dim or detect_fov.shape[1]<self.fov_dim:
-					if self.black_background:
-						background_analysis=np.zeros((self.fov_dim,self.fov_dim,3),dtype='uint8')
-						background_detect=np.zeros((self.fov_dim,self.fov_dim,3),dtype='uint8')
-					else:
-						background_analysis=np.uint8(np.ones((self.fov_dim,self.fov_dim,3),dtype='uint8')*255)
-						background_detect=np.uint8(np.ones((self.fov_dim,self.fov_dim,3),dtype='uint8')*255)
-					background_analysis[:detect_fov.shape[0],:detect_fov.shape[1]]=analysis_fov
-					background_detect[:detect_fov.shape[0],:detect_fov.shape[1]]=detect_fov
-					analysis_fov=background_analysis
-					detect_fov=background_detect
-				if self.black_background:
-					area_noholes=np.count_nonzero(cv2.threshold(cv2.cvtColor(detect_fov,cv2.COLOR_BGR2GRAY),0,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)[1])
-				else:
-					area_noholes=detect_fov.shape[0]*detect_fov.shape[1]-np.count_nonzero(cv2.threshold(cv2.cvtColor(detect_fov,cv2.COLOR_BGR2GRAY),0,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)[1])
-
-				total_foreground_area+=area_noholes
-
+			if image.ndim==2:
+				image=cv2.cvtColor(image,cv2.COLOR_GRAY2BGR)
+			else:
+				image=cv2.cvtColor(image,cv2.COLOR_RGB2BGR)
+		height,width=image.shape[:2]
+		total_foreground_area=0
+		records=[]
+		for y0 in range(0,height,self.fov_dim):
+			for x0 in range(0,width,self.fov_dim):
+				y1,x1=min(y0+self.fov_dim,height),min(x0+self.fov_dim,width)
+				analysis_fov=np.full((self.fov_dim,self.fov_dim,3),0 if self.black_background else 255,dtype=image.dtype)
+				analysis_fov[:y1-y0,:x1-x0]=image[y0:y1,x0:x1]
+				fov=np.uint8(exposure.rescale_intensity(image[y0:y1,x0:x1],out_range=(0,255)))
+				detect_fov=np.full((self.fov_dim,self.fov_dim,3),0 if self.black_background else 255,dtype=np.uint8)
+				detect_fov[:y1-y0,:x1-x0]=fov
+				foreground=cv2.threshold(cv2.cvtColor(fov,cv2.COLOR_BGR2GRAY),0,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)[1]
+				total_foreground_area+=np.count_nonzero(foreground) if self.black_background else foreground.size-np.count_nonzero(foreground)
 				output=self.detector.inference([{'image':torch.as_tensor(detect_fov.astype('float32').transpose(2,0,1))}])
 				instances=output[0]['instances'].to('cpu')
 				masks=instances.pred_masks.numpy().astype(np.uint8)
-				classes=instances.pred_classes.numpy()
-				classes=[self.cell_mapping[str(x)] for x in classes]
-				scores=instances.scores.numpy()
+				classes=[self.cell_mapping[str(value)] for value in instances.pred_classes.numpy()]
+				tile_records=self._prepare_tile_detections(masks,classes,instances.scores.numpy(),(y1-y0,x1-x0),(x0,y0),apply_filters=True)
+				for record in tile_records:
+					mask=record.pop('mask').astype(bool)
+					record['intensity']=float(np.sum(analysis_fov,dtype=np.float64,where=mask[...,None])/record['metrics']['area'])
+				records.extend(tile_records)
 
-				if len(masks)>0:
-
-					for cell_name in self.cell_kinds:
-
-						hex_color=self.names_colors[cell_name].lstrip('#')
-						color=tuple(int(hex_color[i:i+2],16) for i in (0,2,4))
-						color=color[::-1]
-
-						cell_masks=[masks[a] for a,name in enumerate(classes) if name==cell_name]
-						cell_scores=[scores[a] for a,name in enumerate(classes) if name==cell_name]
-
-						if len(cell_masks)>0:
-
-							mask_area=np.sum(np.array(cell_masks),axis=(1,2))
-							exclusion_mask=np.zeros(len(cell_masks),dtype=bool)
-							exclusion_mask[np.where((np.sum(np.logical_and(np.array(cell_masks)[:,None],cell_masks),axis=(2,3))/mask_area[:,None]>0.8) & (mask_area[:,None]<mask_area[None,:]))[0]]=True
-							cell_masks=[m for m,exclude in zip(cell_masks,exclusion_mask) if not exclude]
-							cell_scores=[s for s,exclude in zip(cell_scores,exclusion_mask) if not exclude]
-
-							if len(cell_masks)>0:
-
-									goodmasks=[cell_masks[x] for x,score in enumerate(cell_scores) if score>=self.detection_threshold[cell_name]]
-
-									if len(goodmasks)>0:
-
-										for mask in goodmasks:
-											mask=cv2.morphologyEx(mask,cv2.MORPH_CLOSE,np.ones((5,5),np.uint8))
-											if self.expansion is not None:
-												mask=cv2.dilate(mask,np.ones((5,5),np.uint8),iterations=self.expansion)
-											cnts,_=cv2.findContours((mask*255).astype(np.uint8),cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_NONE)
-											if len(cnts)>0:
-												cnt=sorted(cnts,key=cv2.contourArea,reverse=True)[0]
-												area=np.sum(np.array(mask),axis=(0,1))
-												perimeter=cv2.arcLength(cnt,closed=True)
-												roundness=(4*np.pi*area)/(perimeter*perimeter)
-												(_,_),(wd,ht),_=cv2.minAreaRect(cnt)
-												intensity=np.sum(analysis_fov*cv2.cvtColor(mask,cv2.COLOR_GRAY2BGR))/max(area,1)
-												cnt=cnt+offset
-												segmentation=cnt.flatten().tolist()
-												if 'area' in self.filters:
-													if area<self.filters['area'][0] or area>self.filters['area'][1]:
-														continue
-												if 'perimeter' in self.filters:
-													if perimeter<self.filters['perimeter'][0] or perimeter>self.filters['perimeter'][1]:
-														continue
-												if 'roundness' in self.filters:
-													if roundness<self.filters['roundness'][0] or roundness>self.filters['roundness'][1]:
-														continue
-												if 'height' in self.filters:
-													if ht<self.filters['height'][0] or ht>self.filters['height'][1]:
-														continue
-												if 'width' in self.filters:
-													if wd<self.filters['width'][0] or wd>self.filters['width'][1]:
-														continue
-												if area>0:
-													cx=int(cv2.moments(cnt)['m10']/cv2.moments(cnt)['m00'])+int(w*self.fov_dim)
-													cy=int(cv2.moments(cnt)['m01']/cv2.moments(cnt)['m00'])+int(h*self.fov_dim)
-													data[cell_name]['center'].append((cx,cy))
-													data[cell_name]['area'].append(area)
-													data[cell_name]['height'].append(ht)
-													data[cell_name]['width'].append(wd)
-													data[cell_name]['perimeter'].append(perimeter)
-													data[cell_name]['roundness'].append(roundness)
-													data[cell_name]['intensity'].append(intensity)
-													annotation['segmentations'].append(segmentation)
-													annotation['class_names'].append(cell_name)
-													cv2.drawContours(to_annotate,[cnt],0,color,thickness)
-													if self.show_ids:
-														cv2.putText(to_annotate,str(len(data[cell_name]['center'])),(cx-int(w*self.fov_dim),cy-int(h*self.fov_dim)),cv2.FONT_HERSHEY_SIMPLEX,thickness,color,thickness)
-													data[cell_name]['total_cell_area']+=area
-
-		cv2.imwrite(os.path.join(self.results_path,os.path.splitext(image_name)[0]+'_annotated.'+image_name.split('.')[-1]),to_annotate)
-
-		with pd.ExcelWriter(os.path.join(self.results_path,os.path.splitext(image_name)[0]+'_summary.xlsx'),engine='openpyxl') as writer:
-
-			for cell_name in self.cell_kinds:
-
+		records=self._assign_ids(records)
+		annotated=np.uint8(exposure.rescale_intensity(image,out_range=(0,255)))
+		thickness=max(1,round(self.fov_dim/960))
+		for record in records:
+			self._draw_detection(annotated,record,thickness)
+		cv2.imwrite(os.path.join(self.results_path,stem+'_annotated.'+image_name.split('.')[-1]),annotated)
+		parameters=['center','area','height','width','perimeter','roundness','intensity']
+		with pd.ExcelWriter(os.path.join(self.results_path,stem+'_summary.xlsx'),engine='openpyxl') as writer:
+			for kind in self.cell_kinds:
 				rows=[]
-				columns=['filename','ID']+parameters
+				for record in sorted((record for record in records if record['kind']==kind),key=lambda record:record['cell_id']):
+					metrics=record['metrics']
+					rows.append([stem,record['cell_id'],record['center']]+[metrics[key] for key in parameters[1:-1]]+[record['intensity']])
+				pd.DataFrame(rows,columns=['filename','ID']+parameters).to_excel(writer,sheet_name=kind,float_format='%.2f',index=False)
+		with pd.ExcelWriter(os.path.join(self.results_path,stem+'_arearatio.xlsx'),engine='openpyxl') as writer:
+			for kind in self.cell_kinds:
+				area=sum(record['metrics']['area'] for record in records if record['kind']==kind)
+				ratio=area/total_foreground_area if total_foreground_area else np.nan
+				pd.DataFrame({'total_area':total_foreground_area,kind+'_area':area,'area_ratio':ratio},index=['value']).to_excel(writer,sheet_name=kind,float_format='%.6f')
 
-				if cell_name in data:
-					values=zip(*[data[cell_name][parameter] for parameter in parameters])
-					for idx,value in enumerate(values):
-						rows.append([os.path.splitext(image_name)[0],idx+1]+list(value))
-
-				df=pd.DataFrame(rows,columns=columns)
-				df.to_excel(writer,sheet_name=cell_name,float_format='%.2f',index=False)
-
-		with pd.ExcelWriter(os.path.join(self.results_path,os.path.splitext(image_name)[0]+'_arearatio.xlsx'),engine='openpyxl') as writer:
-
-			for cell_name in self.cell_kinds:
-
-				dfs={}
-				dfs['total_area']=total_foreground_area
-				dfs[cell_name+'_area']=data[cell_name]['total_cell_area']
-				dfs['area_ratio']=data[cell_name]['total_cell_area']/total_foreground_area
-				dfs=pd.DataFrame(dfs,index=['value'])
-				dfs.to_excel(writer,sheet_name=cell_name,float_format='%.6f')
-
+		# COCO annotation IDs remain unique; cell_id links the two object types.
 		coco_format={'info':{'year':'','version':'1','description':'Cellan annotations','contributor':'','url':'https://github.com/yujiahu415/Cellan','date_created':''},'licenses':[],'categories':[],'images':[],'annotations':[]}
-
-		for i,cell_name in enumerate(self.cell_kinds):
-			coco_format['categories'].append({
-				'id':i+1,
-				'name':cell_name,
-				'supercategory':'none'})
-
-		annotation_id=0
-		imwrite(os.path.join(self.results_path,image_name),cv2.cvtColor(image,cv2.COLOR_BGR2RGB))
-
-		coco_format['images'].append({
-			'id':0,
-			'width':image.shape[1],
-			'height':image.shape[0],
-			'file_name':image_name})
-
-		for i,seg in enumerate(annotation['segmentations']):
-
-			category_id=self.cell_kinds.index(annotation['class_names'][i])+1
-			polygon=[(seg[x],seg[x+1]) for x in range(0,len(seg)-1,2)]
-
-			n=len(polygon)
-			area=0
-			for i in range(n):
-				x1,y1=polygon[i]
-				x2,y2=polygon[(i+1)%n]
-				area+=x1*y2-x2*y1
-			area=abs(area)/2
-
-			x_coords,y_coords=zip(*polygon)
-			x_min=int(min(x_coords))
-			y_min=int(min(y_coords))
-			x_max=int(max(x_coords))
-			y_max=int(max(y_coords))
-			bbox=[x_min,y_min,x_max-x_min,y_max-y_min]
-
-			coco_format['annotations'].append({
-				'id':annotation_id,
-				'image_id':0,
-				'category_id':category_id,
-				'segmentation':[seg],
-				'area':area,
-				'bbox':bbox,
-				'iscrowd':0
-				})
-
-			annotation_id+=1
-
-		with open(os.path.join(self.results_path,'annotations.json'),'w') as json_file:
-			json.dump(coco_format,json_file)
-
+		for index,kind in enumerate(self.cell_kinds):
+			coco_format['categories'].append({'id':index+1,'name':kind,'supercategory':'none'})
+		if os.path.splitext(image_name)[1].lower() in ['.jpg','.png']:
+			cv2.imwrite(os.path.join(self.results_path,image_name),image)
+		else:
+			imwrite(os.path.join(self.results_path,image_name),cv2.cvtColor(image,cv2.COLOR_BGR2RGB))
+		coco_format['images'].append({'id':0,'width':width,'height':height,'file_name':image_name})
+		for annotation_id,record in enumerate(records):
+			contour=record['contour']
+			x,y,wd,ht=cv2.boundingRect(contour)
+			coco_format['annotations'].append({'id':annotation_id,'cell_id':record['cell_id'],'image_id':0,
+				'category_id':self.cell_kinds.index(record['kind'])+1,'segmentation':[contour.flatten().tolist()],
+				'area':float(cv2.contourArea(contour)),'bbox':[x,y,wd-1,ht-1],'iscrowd':0})
+		with open(os.path.join(self.results_path,'annotations.json'),'w') as stream:
+			json.dump(coco_format,stream)
 		print('Analysis completed!')
 
 
