@@ -1,3 +1,4 @@
+from .channels import validate_mapping, training_mapping
 import os
 import cv2
 import json
@@ -19,13 +20,14 @@ class Detector():
 	def __init__(self):
 
 		self.device='cuda' if torch.cuda.is_available() else 'cpu' # whether the GPU is available, if so, use GPU
+		self.channel_color_mapping=None
 		self.cell_mapping=None # the celln categories and names in a Detector
 		self.inferencing_framesize=None
 		self.black_background=None
 		self.current_detector=None # the current Detector used for inference
 
 
-	def train(self,path_to_annotation,path_to_trainingimages,path_to_detector,iteration_num,inference_size,num_rois,black_background=0):
+	def train(self,path_to_annotation,path_to_trainingimages,path_to_detector,iteration_num,inference_size,num_rois,black_background=0,channel_color_mapping=None):
 
 		# path_to_annotation: the path to the .json file that stores the annotations in coco format
 		# path_to_trainingimages: the folder that stores all the training images
@@ -33,6 +35,8 @@ class Detector():
 		# inference_size: the Detector inferencing frame size
 		# num_rois: the batch size of ROI heads per image
 		# black_background: whether the background of images to analyze is black/darker
+
+		channel_color_mapping=training_mapping(path_to_trainingimages,channel_color_mapping)
 
 		if str('Cellan_detector_train') in DatasetCatalog.list():
 			DatasetCatalog.remove('Cellan_detector_train')
@@ -59,6 +63,7 @@ class Detector():
 		cfg=get_cfg()
 		cfg.merge_from_file(model_zoo.get_config_file('COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml'))
 		cfg.OUTPUT_DIR=path_to_detector
+		cfg.INPUT.FORMAT='BGR'
 		cfg.DATASETS.TRAIN=('Cellan_detector_train',)
 		cfg.DATASETS.TEST=()
 		cfg.DATALOADER.NUM_WORKERS=4
@@ -89,6 +94,8 @@ class Detector():
 		model_parameters_dict['cell_mapping']={}
 		model_parameters_dict['inferencing_framesize']=int(inference_size)
 		model_parameters_dict['black_background']=int(black_background)
+		if channel_color_mapping is not None:
+			model_parameters_dict['channel_color_mapping']=channel_color_mapping
 
 		for i in range(len(classnames)):
 			model_parameters_dict['cell_mapping'][i]=classnames[i]
@@ -176,6 +183,9 @@ class Detector():
 		cellmapping=os.path.join(path_to_detector,'model_parameters.txt')
 		with open(cellmapping) as f:
 			model_parameters=f.read()
+		self.channel_color_mapping=json.loads(model_parameters).get('channel_color_mapping')
+		if self.channel_color_mapping is not None:
+			self.channel_color_mapping=validate_mapping(self.channel_color_mapping)
 		self.cell_mapping=json.loads(model_parameters)['cell_mapping']
 		cell_names=json.loads(model_parameters)['cell_names']
 		self.inferencing_framesize=int(json.loads(model_parameters)['inferencing_framesize'])
